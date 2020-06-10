@@ -3,8 +3,8 @@
 
 SHELL=/bin/sh
 CC=gcc
-CFLAGS= -O4  -march=native
-SAFECFLAGS= -O4
+CFLAGS=-O4 -fPIC  -mpopcnt -march=native
+SAFECFLAGS=-O4 -fPIC
 LDFLAGS= 
 THREADLIB=
 LOK=1         # 0 if no 64-bit integers

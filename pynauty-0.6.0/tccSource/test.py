@@ -1,17 +1,22 @@
 from pynauty import *
+import json
 
-g = Graph(5)
-g.connect_vertex(0, [1, 2, 3])
-g.connect_vertex(2, [1, 3, 4])
-g.connect_vertex(4, [3])
+def getIsIsomorphic(g, h):
+    return isomorphic(g, h)
 
-h = Graph(5)
-h.connect_vertex(0, [1, 3, 4])
-h.connect_vertex(2, [3, 4])
-h.connect_vertex(4, [3])
-h.connect_vertex(3, [1])
 
-print(certificate(g))
-print(certificate(h))
+def getGraph(data):
+    g = Graph(data["numberOfVertex"])
+    graph = data["graph"]
+    for v in graph:
+        g.connect_vertex(int(v), graph[v])
+    return g
 
-print(isomorphic(g, h))
+def main():
+    with open("graphs.json") as jsonFile:
+        data = json.load(jsonFile)
+    g = getGraph(data[0])
+    h = getGraph(data[1])
+    print(getIsIsomorphic(g, h))
+
+main()

@@ -5,11 +5,11 @@ class GraphExt(Graph):
         super().__init__(vertexAmount)
         self.vertexAmount = vertexAmount
 
-    def getAdjacecy(self):
+    def getAdjacency(self):
         return self.adjacency_dict
 
     def _vertexDegree(self, v):
-        adjacencyDict = self.getAdjacecy()
+        adjacencyDict = self.getAdjacency()
         count = 0
         if v in adjacencyDict.keys():
             count += len(adjacencyDict[v])
@@ -31,3 +31,16 @@ class GraphExt(Graph):
         for i in range(self.vertexAmount):
             allDegrees[i] = self._vertexDegree(i)
         return allDegrees
+
+    def getVertexAdjacency(self, v):
+        selfAdjacency = self.getAdjacency()
+        adjacency = []
+
+        if v in selfAdjacency.keys():
+            adjacency = adjacency + selfAdjacency[v]
+
+        for vertex in selfAdjacency.keys():
+            values = selfAdjacency[vertex]
+            if v in values and vertex not in adjacency:
+                adjacency.append(vertex)
+        return adjacency

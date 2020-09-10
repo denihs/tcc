@@ -18,7 +18,10 @@ def main():
         data = json.load(jsonFile)
     g = getGraph(data[0])
     h = getGraph(data[1])
-    print(g.getVertexDegree(4))
+
+    for i in range(g.vertexAmount):
+        print("{} - {}".format(i, g.getVertexAdjacency(i)))
+
     print(getIsIsomorphic(g, h))
 
 main()

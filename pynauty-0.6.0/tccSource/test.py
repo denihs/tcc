@@ -32,6 +32,14 @@ def filterList(listValues, value):
     return list(x for x in listValues if x != value)
 
 
+def removeOneOccurrence(listValues, value):
+    l = deepcopy(listValues)
+    if value not in l:
+        return l
+    l.remove(value)
+    return l
+
+
 def bindGraph(g1, g2):
     if g1.vertexAmount < g2.vertexAmount:
         graph1 = g1
@@ -80,6 +88,10 @@ def bindGraph(g1, g2):
                 )
             )
 
+    # isso ajudará quando for necessário permutar um dos grafos na colagem
+    g.setInternalGraphEnd(len(map1.keys()) - 1)
+    g.setInternalGraphVertexAmount(len(map1.keys()))
+
     # conectando as partes dos grafos
     # descobre quem está com grau faltando no primeiro grafo
     # e adiciona uma aresta para todos os vértices dele
@@ -102,26 +114,36 @@ def bindGraph(g1, g2):
     return g
 
 
-def twistEdges(graph, bindDegree):
+def twistEdges(graph, fixingAmount):
     global GRAPHS
     global GRAPHS_COUNT
 
-    if bindDegree == 1:
+    if fixingAmount < 0 or graph.internalGraphVertexAmount < 4:
         return
 
     g = deepcopy(graph)
-    for i in range(g.bindDegree - 1):
-        connections = g.connections
-        items = list(connections.items())
-        item1 = items[i]
-        item2 = items[i + 1]
-        g.connect_vertex(item1[0], [item2[1]] + filterList(g.getAllVertexAdjacency()[item1[0]], item1[1]))
-        g.connect_vertex(item2[0], [item1[1]] + filterList(g.getAllVertexAdjacency()[item2[0]], item2[1]))
-        g.setConnections(item1[0], item2[1])
-        g.setConnections(item2[0], item1[1])
-    GRAPHS.append(g)
-    GRAPHS_COUNT += 1
-    return twistEdges(g, bindDegree - 1)
+
+    amountMoving = g.internalGraphVertexAmount - fixingAmount
+    for i in range(1, g.internalGraphVertexAmount):
+        nextVertex = i
+        for currentVertex in range(amountMoving):
+            adjacency = g.getAllVertexAdjacency()
+            if currentVertex in adjacency[nextVertex]:
+                g.connect_vertex(currentVertex, removeOneOccurrence(adjacency[currentVertex], nextVertex))
+                g.connect_vertex(nextVertex, removeOneOccurrence(adjacency[nextVertex], currentVertex))
+                nextVertexBind = nextVertex + 1
+                if nextVertexBind == g.internalGraphVertexAmount:
+                    nextVertexBind = 0
+                if nextVertexBind != currentVertex:
+                    g.connect_vertex(nextVertexBind, [currentVertex] + adjacency[nextVertexBind])
+            nextVertex += 1
+            if nextVertex == g.internalGraphVertexAmount:
+                nextVertex = 0
+        g.setTier(amountMoving)
+        GRAPHS.append(g)
+        GRAPHS_COUNT += 1
+        g = deepcopy(g)
+    return twistEdges(graph, fixingAmount - 1)
 
 
 def main():
@@ -130,7 +152,7 @@ def main():
     global GRAPHS_COUNT
     global ISOMORPHIC_GRAPH_COUNT
 
-    with open("grafosColagem3v.json") as jsonFile:
+    with open("grafosColagemRoda5v.json") as jsonFile:
         data = json.load(jsonFile)
 
     g = getGraph(data[0])
@@ -140,9 +162,7 @@ def main():
     GRAPHS_COUNT += 1
     GRAPHS.append(bindedGraph)
 
-    twistEdges(GRAPHS[0], GRAPHS[0].bindDegree)
-
-    print(GRAPHS)
+    twistEdges(GRAPHS[0], GRAPHS[0].internalGraphVertexAmount - 1)
 
     for g in GRAPHS:
         if len(ACCEPTED_GRAPHS) == 0:
@@ -159,6 +179,7 @@ def main():
     for g in ACCEPTED_GRAPHS:
         print("-=-==- GRAFO {} -=-==- ".format(count))
         print(g)
+        print(g.tier)
         count += 1
     print("TOTAL GRAFOS GERADOS: {}".format(GRAPHS_COUNT))
     print("TOTAL GRAFOS ISOMORFOS: {}".format(ISOMORPHIC_GRAPH_COUNT))

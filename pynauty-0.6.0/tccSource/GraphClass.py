@@ -8,6 +8,9 @@ class GraphExt(Graph):
         self.bindVertex = bindVertex
         self.bindDegree = bindDegree
         self.connections = {}
+        self.internalGraphEnd = None
+        self.internalGraphVertexAmount = None
+        self.tier = None
 
     def getAdjacency(self):
         return self.adjacency_dict
@@ -58,3 +61,12 @@ class GraphExt(Graph):
 
     def setConnections(self, v1, v2):
         self.connections[v1] = v2
+
+    def setInternalGraphEnd(self, end):
+        self.internalGraphEnd = end
+
+    def setInternalGraphVertexAmount(self, amount):
+        self.internalGraphVertexAmount = amount
+
+    def setTier(self, tier):
+        self.tier = tier

@@ -158,7 +158,7 @@ def main():
     global GRAPHS_COUNT
     global ISOMORPHIC_GRAPH_COUNT
 
-    with open("grafosColagemRoda5v.json") as jsonFile:
+    with open("grafosColagemRoda4v.json") as jsonFile:
         data = json.load(jsonFile)
 
     g = getGraph(data[0])

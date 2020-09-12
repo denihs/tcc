@@ -1,6 +1,12 @@
-from pynauty import *
+from pynauty import isomorphic
 import json
 from GraphClass import GraphExt
+from copy import deepcopy
+
+GRAPHS = []
+ACCEPTED_GRAPHS = []
+GRAPHS_COUNT = 0
+ISOMORPHIC_GRAPH_COUNT = 0
 
 
 def getIsIsomorphic(g, h):
@@ -55,7 +61,7 @@ def bindGraph(g1, g2):
             map2[i] = elem
 
     # montando o grafo
-    g = GraphExt(newGraphSize)
+    g = GraphExt(newGraphSize, bindDegree=graph1.getVertexDegree(graph1.bindVertex))
     for i in range(newGraphSize):
         if i < graph1.vertexAmount - 1:
             g.connect_vertex(
@@ -90,19 +96,72 @@ def bindGraph(g1, g2):
         if key < graph1.vertexAmount - 1:
             p = mapKeys2.pop()
             for i in range(diff):
+                g.setConnections(key, p)
                 g.connect_vertex(key, [p] + g.adjacency_dict[key])
 
     return g
 
 
+def twistEdges(graph, bindDegree):
+    global GRAPHS
+    global GRAPHS_COUNT
+
+    if bindDegree == 1:
+        return
+
+    g = deepcopy(graph)
+    for i in range(g.bindDegree - 1):
+        connections = g.connections
+        items = list(connections.items())
+        item1 = items[i]
+        item2 = items[i + 1]
+        g.connect_vertex(item1[0], [item2[1]] + filterList(g.getAllVertexAdjacency()[item1[0]], item1[1]))
+        g.connect_vertex(item2[0], [item1[1]] + filterList(g.getAllVertexAdjacency()[item2[0]], item2[1]))
+        g.setConnections(item1[0], item2[1])
+        g.setConnections(item2[0], item1[1])
+    GRAPHS.append(g)
+    GRAPHS_COUNT += 1
+    return twistEdges(g, bindDegree - 1)
+
+
 def main():
-    with open("grafosColagem4v.json") as jsonFile:
+    global GRAPHS
+    global ACCEPTED_GRAPHS
+    global GRAPHS_COUNT
+    global ISOMORPHIC_GRAPH_COUNT
+
+    with open("grafosColagem3v.json") as jsonFile:
         data = json.load(jsonFile)
 
     g = getGraph(data[0])
     h = getGraph(data[1])
 
     bindedGraph = bindGraph(g, h)
-    print(bindedGraph)
+    GRAPHS_COUNT += 1
+    GRAPHS.append(bindedGraph)
+
+    twistEdges(GRAPHS[0], GRAPHS[0].bindDegree)
+
+    print(GRAPHS)
+
+    for g in GRAPHS:
+        if len(ACCEPTED_GRAPHS) == 0:
+            ACCEPTED_GRAPHS.append(g)
+        else:
+            for acceptedGraph in ACCEPTED_GRAPHS:
+                if getIsIsomorphic(g, acceptedGraph):
+                    ISOMORPHIC_GRAPH_COUNT += 1
+                    break
+            else:
+                ACCEPTED_GRAPHS.append(g)
+
+    count = 1
+    for g in ACCEPTED_GRAPHS:
+        print("-=-==- GRAFO {} -=-==- ".format(count))
+        print(g)
+        count += 1
+    print("TOTAL GRAFOS GERADOS: {}".format(GRAPHS_COUNT))
+    print("TOTAL GRAFOS ISOMORFOS: {}".format(ISOMORPHIC_GRAPH_COUNT))
+
 
 main()

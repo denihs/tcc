@@ -1,0 +1,21 @@
+[
+
+    {
+        "numberOfVertex": 4,
+        "bindVertex":  3,
+        "graph": {
+            "0": [1, 2, 3],
+            "3": [1, 2],
+            "2": [1]
+        }
+    },
+    {
+        "numberOfVertex": 4,
+        "bindVertex":  0,
+        "graph": {
+            "1": [0, 2, 3],
+            "2": [0, 3],
+            "3": [0]
+        }
+    }
+]

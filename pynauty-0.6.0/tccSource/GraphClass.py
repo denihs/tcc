@@ -2,10 +2,12 @@ from pynauty import Graph
 
 
 class GraphExt(Graph):
-    def __init__(self, vertexAmount, bindVertex=None):
+    def __init__(self, vertexAmount, bindVertex=None, bindDegree=None):
         super().__init__(vertexAmount)
         self.vertexAmount = vertexAmount
         self.bindVertex = bindVertex
+        self.bindDegree = bindDegree
+        self.connections = {}
 
     def getAdjacency(self):
         return self.adjacency_dict
@@ -53,3 +55,6 @@ class GraphExt(Graph):
         for i in range(self.vertexAmount):
             adjacency[i] = self.getVertexAdjacency(i)
         return adjacency
+
+    def setConnections(self, v1, v2):
+        self.connections[v1] = v2

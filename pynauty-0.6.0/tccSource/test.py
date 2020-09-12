@@ -135,7 +135,13 @@ def twistEdges(graph, fixingAmount):
                 if nextVertexBind == g.internalGraphVertexAmount:
                     nextVertexBind = 0
                 if nextVertexBind != currentVertex:
-                    g.connect_vertex(nextVertexBind, [currentVertex] + adjacency[nextVertexBind])
+                    nextVertexBindAdjacency = adjacency[nextVertexBind]
+                    g.connect_vertex(
+                        nextVertexBind,
+                        [currentVertex] + nextVertexBindAdjacency
+                        if currentVertex not in nextVertexBindAdjacency
+                        else nextVertexBindAdjacency
+                    )
             nextVertex += 1
             if nextVertex == g.internalGraphVertexAmount:
                 nextVertex = 0

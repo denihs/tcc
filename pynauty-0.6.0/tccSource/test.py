@@ -156,7 +156,6 @@ def drawGraph(g, name=None, gFormat="circular"):
         for v in adjacency:
             if (v, vertex) not in vertices:
                 vertices.append((vertex, v))
-    print(vertices)
     graph.add_edges(vertices)
     graph.vs["label"] = list(allAdjacency.keys())
     layout = graph.layout(gFormat)

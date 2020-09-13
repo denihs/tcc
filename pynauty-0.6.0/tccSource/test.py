@@ -147,7 +147,7 @@ def twistEdges(graph, fixingAmount):
     return twistEdges(graph, fixingAmount - 1)
 
 
-def drawGraph(g):
+def drawGraph(g, name=None):
     allAdjacency = g.getAllVertexAdjacency()
     graph = igraph.Graph()
     graph.add_vertices(g.vertexAmount)
@@ -156,9 +156,11 @@ def drawGraph(g):
         for v in adjacency:
             if (v, vertex) not in vertices:
                 vertices.append((vertex, v))
+    print(vertices)
     graph.add_edges(vertices)
-    layout = graph.layout("kk")
-    igraph.plot(graph, layout=layout)
+    graph.vs["label"] = list(allAdjacency.keys())
+    layout = graph.layout("circular")
+    igraph.plot(graph, layout=layout, inline=True).save('./img/{}.png'.format(name))
 
 
 def main():
@@ -195,6 +197,7 @@ def main():
         print("-=-==- GRAFO {} -=-==- ".format(count))
         print(g)
         print(g.tier)
+        drawGraph(g, "graph-{}".format(count))
         count += 1
     print("TOTAL GRAFOS GERADOS: {}".format(GRAPHS_COUNT))
     print("TOTAL GRAFOS ISOMORFOS: {}".format(ISOMORPHIC_GRAPH_COUNT))

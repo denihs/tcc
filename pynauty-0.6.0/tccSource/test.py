@@ -2,6 +2,7 @@ from pynauty import isomorphic
 import json
 from GraphClass import GraphExt
 from copy import deepcopy
+import igraph
 
 GRAPHS = []
 ACCEPTED_GRAPHS = []
@@ -135,13 +136,7 @@ def twistEdges(graph, fixingAmount):
                 if nextVertexBind == g.internalGraphVertexAmount:
                     nextVertexBind = 0
                 if nextVertexBind != currentVertex:
-                    nextVertexBindAdjacency = adjacency[nextVertexBind]
-                    g.connect_vertex(
-                        nextVertexBind,
-                        [currentVertex] + nextVertexBindAdjacency
-                        if currentVertex not in nextVertexBindAdjacency
-                        else nextVertexBindAdjacency
-                    )
+                    g.connect_vertex(nextVertexBind, [currentVertex] + adjacency[nextVertexBind])
             nextVertex += 1
             if nextVertex == g.internalGraphVertexAmount:
                 nextVertex = 0
@@ -152,13 +147,27 @@ def twistEdges(graph, fixingAmount):
     return twistEdges(graph, fixingAmount - 1)
 
 
+def drawGraph(g):
+    allAdjacency = g.getAllVertexAdjacency()
+    graph = igraph.Graph()
+    graph.add_vertices(g.vertexAmount)
+    vertices = []
+    for vertex, adjacency in allAdjacency.items():
+        for v in adjacency:
+            if (v, vertex) not in vertices:
+                vertices.append((vertex, v))
+    graph.add_edges(vertices)
+    layout = graph.layout("kk")
+    igraph.plot(graph, layout=layout)
+
+
 def main():
     global GRAPHS
     global ACCEPTED_GRAPHS
     global GRAPHS_COUNT
     global ISOMORPHIC_GRAPH_COUNT
 
-    with open("grafosColagemRoda4v.json") as jsonFile:
+    with open("grafosColagemRoda5v.json") as jsonFile:
         data = json.load(jsonFile)
 
     g = getGraph(data[0])

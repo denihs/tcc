@@ -10,6 +10,7 @@ class GraphExt(Graph):
         self.connections = {}
         self.internalGraphEnd = None
         self.internalGraphVertexAmount = None
+        self.externalGraphVertexAmount = None
         self.tier = None
 
     def getAdjacency(self):
@@ -67,6 +68,9 @@ class GraphExt(Graph):
 
     def setInternalGraphVertexAmount(self, amount):
         self.internalGraphVertexAmount = amount
+
+    def setExternalGraphVertexAmount(self, amount):
+        self.externalGraphVertexAmount = amount
 
     def setTier(self, tier):
         self.tier = tier

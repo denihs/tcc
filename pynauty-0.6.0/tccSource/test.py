@@ -92,6 +92,7 @@ def bindGraph(g1, g2):
     # isso ajudará quando for necessário permutar um dos grafos na colagem
     g.setInternalGraphEnd(len(map1.keys()) - 1)
     g.setInternalGraphVertexAmount(len(map1.keys()))
+    g.setExternalGraphVertexAmount(len(map2.keys()))
 
     # conectando as partes dos grafos
     # descobre quem está com grau faltando no primeiro grafo
@@ -115,42 +116,60 @@ def bindGraph(g1, g2):
     return g
 
 
-def twistEdges(graph, fixingAmount):
+def removeRepeatedVertex(g):
+    adjacency = g.getAllVertexAdjacency()
+    for k in adjacency.keys():
+        g.connect_vertex(k, list(set(adjacency[k])))
+
+
+def twistEdges(graph, fixingAmount, vertexRange, twistAgain):
     global GRAPHS
     global GRAPHS_COUNT
+    global ISOMORPHIC_GRAPH_COUNT
 
-    if fixingAmount < 0 or graph.internalGraphVertexAmount < 4:
+    vertexAmount = vertexRange[1]
+    vertexInit = vertexRange[0]
+
+    if fixingAmount < 0 or vertexAmount < 4:
         return
 
     g = deepcopy(graph)
 
-    amountMoving = g.internalGraphVertexAmount - fixingAmount
-    for i in range(1, g.internalGraphVertexAmount):
+    amountMoving = vertexAmount - fixingAmount
+    for i in range(vertexInit, vertexAmount + vertexInit):
         nextVertex = i
-        for currentVertex in range(amountMoving):
+        for j in range(amountMoving):
+            currentVertex = j + vertexInit
             adjacency = g.getAllVertexAdjacency()
             if currentVertex in adjacency[nextVertex]:
                 g.connect_vertex(currentVertex, removeOneOccurrence(adjacency[currentVertex], nextVertex))
                 g.connect_vertex(nextVertex, removeOneOccurrence(adjacency[nextVertex], currentVertex))
                 nextVertexBind = nextVertex + 1
-                if nextVertexBind == g.internalGraphVertexAmount:
-                    nextVertexBind = 0
+
+                if nextVertexBind == vertexAmount + vertexInit:
+                    nextVertexBind = vertexInit
+
                 if nextVertexBind != currentVertex:
                     g.connect_vertex(nextVertexBind, [currentVertex] + adjacency[nextVertexBind])
+
             nextVertex += 1
-            if nextVertex == g.internalGraphVertexAmount:
-                nextVertex = 0
-        g.setTier(amountMoving)
+            if nextVertex == vertexAmount + vertexInit:
+                nextVertex = vertexInit
+        g.setTier(vertexInit + amountMoving)
         GRAPHS.append(g)
+        if twistAgain:
+            twistEdges(g, g.externalGraphVertexAmount - 1, [vertexAmount, g.externalGraphVertexAmount], False)
         GRAPHS_COUNT += 1
         g = deepcopy(g)
-    return twistEdges(graph, fixingAmount - 1)
+    return twistEdges(graph, fixingAmount - 1, vertexRange, twistAgain)
 
 
 def drawGraph(g, name=None, gFormat="circular"):
-    allAdjacency = g.getAllVertexAdjacency()
+    gCopy = deepcopy(g)
+    removeRepeatedVertex(gCopy)
+    allAdjacency = gCopy.getAllVertexAdjacency()
     graph = igraph.Graph()
-    graph.add_vertices(g.vertexAmount)
+    graph.add_vertices(gCopy.vertexAmount)
     vertices = []
     for vertex, adjacency in allAdjacency.items():
         for v in adjacency:
@@ -180,8 +199,7 @@ def main():
     bindedGraph = bindGraph(g, h)
     GRAPHS_COUNT += 1
     GRAPHS.append(bindedGraph)
-
-    twistEdges(GRAPHS[0], GRAPHS[0].internalGraphVertexAmount - 1)
+    twistEdges(bindedGraph, bindedGraph.internalGraphVertexAmount - 1, [0, bindedGraph.internalGraphVertexAmount], True)
 
     for g in GRAPHS:
         if len(ACCEPTED_GRAPHS) == 0:
@@ -193,7 +211,6 @@ def main():
                     break
             else:
                 ACCEPTED_GRAPHS.append(g)
-
     count = 1
     for g in ACCEPTED_GRAPHS:
         print("-=-==- GRAFO {} -=-==- ".format(count))

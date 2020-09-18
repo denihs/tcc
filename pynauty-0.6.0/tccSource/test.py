@@ -2,6 +2,7 @@ from pynauty import isomorphic
 import json
 from GraphClass import GraphExt
 from copy import deepcopy
+from itertools import permutations
 import igraph
 
 GRAPHS = []
@@ -31,14 +32,6 @@ def translateMap(graphMap, adjacency):
 
 def filterList(listValues, value):
     return list(x for x in listValues if x != value)
-
-
-def removeOneOccurrence(listValues, value):
-    l = deepcopy(listValues)
-    if value not in l:
-        return l
-    l.remove(value)
-    return l
 
 
 def bindGraph(g1, g2):
@@ -116,57 +109,53 @@ def bindGraph(g1, g2):
     return g
 
 
-def removeRepeatedVertex(g):
-    adjacency = g.getAllVertexAdjacency()
-    for k in adjacency.keys():
-        g.connect_vertex(k, list(set(adjacency[k])))
-
-
-def twistEdges(graph, fixingAmount, vertexRange, twistAgain):
+def twistEdges(graph):
     global GRAPHS
     global GRAPHS_COUNT
+    global ACCEPTED_GRAPHS
     global ISOMORPHIC_GRAPH_COUNT
 
-    vertexAmount = vertexRange[1]
-    vertexInit = vertexRange[0]
+    connections = graph.connections
+    connectionsLen = len(connections.keys())
 
-    if fixingAmount < 0 or vertexAmount < 4:
+    if connectionsLen < 4:
         return
 
-    g = deepcopy(graph)
+    keys = list(connections.keys())
+    perm = list(permutations(connections.values()))
 
-    amountMoving = vertexAmount - fixingAmount
-    for i in range(vertexInit, vertexAmount + vertexInit):
-        nextVertex = i
-        for j in range(amountMoving):
-            currentVertex = j + vertexInit
-            adjacency = g.getAllVertexAdjacency()
-            if currentVertex in adjacency[nextVertex]:
-                g.connect_vertex(currentVertex, removeOneOccurrence(adjacency[currentVertex], nextVertex))
-                g.connect_vertex(nextVertex, removeOneOccurrence(adjacency[nextVertex], currentVertex))
-                nextVertexBind = nextVertex + 1
+    ACCEPTED_GRAPHS.append(graph)
 
-                if nextVertexBind == vertexAmount + vertexInit:
-                    nextVertexBind = vertexInit
+    for vertices in perm:
+        g = deepcopy(graph)
+        print("{} {}".format(keys, vertices))
+        for k, v in zip(keys, vertices):
+            adj = g.getAllVertexAdjacency()
+            g.connect_vertex(
+                k,
+                list(
+                    set(
+                        filterList(
+                            adj[k],
+                            connections[k]
+                        ) +
+                        [v]
+                    )
+                )
+            )
 
-                if nextVertexBind != currentVertex:
-                    g.connect_vertex(nextVertexBind, [currentVertex] + adjacency[nextVertexBind])
-
-            nextVertex += 1
-            if nextVertex == vertexAmount + vertexInit:
-                nextVertex = vertexInit
-        g.setTier(vertexInit + amountMoving)
-        GRAPHS.append(g)
-        if twistAgain:
-            twistEdges(g, g.externalGraphVertexAmount - 1, [vertexAmount, g.externalGraphVertexAmount], False)
         GRAPHS_COUNT += 1
-        g = deepcopy(g)
-    return twistEdges(graph, fixingAmount - 1, vertexRange, twistAgain)
+
+        for acceptedGraph in ACCEPTED_GRAPHS:
+            if getIsIsomorphic(g, acceptedGraph):
+                ISOMORPHIC_GRAPH_COUNT += 1
+                break
+        else:
+            ACCEPTED_GRAPHS.append(g)
 
 
 def drawGraph(g, name=None, gFormat="circular"):
     gCopy = deepcopy(g)
-    removeRepeatedVertex(gCopy)
     allAdjacency = gCopy.getAllVertexAdjacency()
     graph = igraph.Graph()
     graph.add_vertices(gCopy.vertexAmount)
@@ -197,25 +186,12 @@ def main():
     drawGraph(h, "graph-init-2", gFormat="kk")
 
     bindedGraph = bindGraph(g, h)
-    GRAPHS_COUNT += 1
-    GRAPHS.append(bindedGraph)
-    twistEdges(bindedGraph, bindedGraph.internalGraphVertexAmount - 1, [0, bindedGraph.internalGraphVertexAmount], True)
 
-    for g in GRAPHS:
-        if len(ACCEPTED_GRAPHS) == 0:
-            ACCEPTED_GRAPHS.append(g)
-        else:
-            for acceptedGraph in ACCEPTED_GRAPHS:
-                if getIsIsomorphic(g, acceptedGraph):
-                    ISOMORPHIC_GRAPH_COUNT += 1
-                    break
-            else:
-                ACCEPTED_GRAPHS.append(g)
+    twistEdges(bindedGraph)
     count = 1
     for g in ACCEPTED_GRAPHS:
         print("-=-==- GRAFO {} -=-==- ".format(count))
         print(g)
-        print(g.tier)
         drawGraph(g, "graph-{}".format(count))
         count += 1
     print("TOTAL GRAFOS GERADOS: {}".format(GRAPHS_COUNT))

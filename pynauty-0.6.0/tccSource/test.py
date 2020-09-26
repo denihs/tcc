@@ -9,7 +9,6 @@ GRAPHS = []
 ACCEPTED_GRAPHS = []
 GRAPHS_COUNT = 0
 ISOMORPHIC_GRAPH_COUNT = 0
-PARINGS = []
 
 
 def getIsIsomorphic(g, h):
@@ -190,8 +189,7 @@ def isNeighbor(adjacencies, k1, k2):
     return k1 in adjacencies[k2]
 
 
-def filterParing(adjacencies):
-    global PARINGS
+def filterParing(adjacencies, PARINGS):
     paringsCopy = deepcopy(PARINGS)
     for p in paringsCopy:
         for v1, v2 in p:
@@ -199,8 +197,9 @@ def filterParing(adjacencies):
                 PARINGS.remove(p)
 
 
-def paring(adjacencies, isParent, maxGroupOfPairs):
-    global PARINGS
+def paring(adjacencies, isParent, maxGroupOfPairs, PARINGS=None):
+    if PARINGS is None:
+        PARINGS = []
     adjacencyKeys = list(adjacencies.keys())
     # Nunca deveriamos entrar aqui
     if len(adjacencyKeys) < 2:
@@ -226,9 +225,10 @@ def paring(adjacencies, isParent, maxGroupOfPairs):
             else:
                 lastParing.append(newPair)
         newAdj = removePair(adjacencies, parentVertex, n)
-        paring(newAdj, False, maxGroupOfPairs)
+        paring(newAdj, False, maxGroupOfPairs, PARINGS)
     if isParent:
-        filterParing(adjacencies)
+        filterParing(adjacencies, PARINGS)
+        return PARINGS
 
 
 def main():
@@ -242,7 +242,7 @@ def main():
 
     g = getGraph(data[0])
     adjacencies = g.getAllVertexAdjacency()
-    paring(
+    PARINGS = paring(
         adjacencies=adjacencies,
         isParent=True,
         maxGroupOfPairs=len(adjacencies.keys())/2

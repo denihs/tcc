@@ -9,6 +9,7 @@ GRAPHS = []
 ACCEPTED_GRAPHS = []
 GRAPHS_COUNT = 0
 ISOMORPHIC_GRAPH_COUNT = 0
+PARINGS = []
 
 
 def getIsIsomorphic(g, h):
@@ -30,8 +31,14 @@ def translateMap(graphMap, adjacency):
     return listGraph
 
 
-def filterList(listValues, value):
-    return list(x for x in listValues if x != value)
+def filterList(listValues, valuesToFilter):
+    toFilter = []
+    if isinstance(valuesToFilter, list):
+        toFilter = valuesToFilter
+    else:
+        toFilter.append(valuesToFilter)
+
+    return list(x for x in listValues if x not in toFilter)
 
 
 def bindGraph(g1, g2):
@@ -170,6 +177,60 @@ def drawGraph(g, name=None, gFormat="circular"):
     igraph.plot(graph, layout=layout, inline=True).save('./img/{}.png'.format(name))
 
 
+def removePair(adjacencies, v1, v2):
+    newAdj = {}
+    for k, v in adjacencies.items():
+        if k == v1 or k == v2:
+            continue
+        newAdj[k] = filterList(v, [v1, v2])
+    return newAdj
+
+
+def isNeighbor(adjacencies, k1, k2):
+    return k1 in adjacencies[k2]
+
+
+def filterParing(adjacencies):
+    global PARINGS
+    paringsCopy = deepcopy(PARINGS)
+    for p in paringsCopy:
+        for v1, v2 in p:
+            if not isNeighbor(adjacencies, v1, v2):
+                PARINGS.remove(p)
+
+
+def paring(adjacencies, isParent, maxGroupOfPairs):
+    global PARINGS
+    adjacencyKeys = list(adjacencies.keys())
+    # Nunca deveriamos entrar aqui
+    if len(adjacencyKeys) < 2:
+        print("GRAFO COM NUMERO IMPAR DE VERTICES")
+        return
+
+    if len(adjacencyKeys) == 2:
+        PARINGS[-1].append((adjacencyKeys[0], adjacencyKeys[1]))
+        return
+
+    parentVertex = list(adjacencyKeys)[0]
+
+    parentNeighbors = adjacencies[parentVertex]
+
+    for n in parentNeighbors:
+        newPair = (parentVertex, n)
+        if isParent:
+            PARINGS.append([newPair])
+        else:
+            lastParing = PARINGS[-1]
+            if len(lastParing) == maxGroupOfPairs:
+                PARINGS.append(lastParing[0:-2] + [newPair])
+            else:
+                lastParing.append(newPair)
+        newAdj = removePair(adjacencies, parentVertex, n)
+        paring(newAdj, False, maxGroupOfPairs)
+    if isParent:
+        filterParing(adjacencies)
+
+
 def main():
     global GRAPHS
     global ACCEPTED_GRAPHS
@@ -180,6 +241,19 @@ def main():
         data = json.load(jsonFile)
 
     g = getGraph(data[0])
+    adjacencies = g.getAllVertexAdjacency()
+    paring(
+        adjacencies=adjacencies,
+        isParent=True,
+        maxGroupOfPairs=len(adjacencies.keys())/2
+    )
+
+    count = 1
+    for p in PARINGS:
+        print("Paring {}: {}".format(count, p))
+        count += 1
+    return
+
     h = getGraph(data[1])
 
     drawGraph(g, "graph-init-1", gFormat="kk")

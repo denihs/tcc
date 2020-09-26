@@ -231,6 +231,46 @@ def paring(adjacencies, isParent, maxGroupOfPairs, PARINGS=None):
         return PARINGS
 
 
+def connectVertex(g, pair):
+    v1, v2 = pair
+    if v1 in g.keys():
+        g[v1] += [v2]
+    else:
+        g[v1] = [v2]
+
+# TODO CONTINUAR DAQUI
+def findCircle(adjacencies, vertex, path=None, ):
+    if path is None:
+        path = []
+    for v in adjacencies[vertex]:
+
+
+
+def countCircles(nVertices, paring1, paring2):
+    g = {"numberOfVertex": nVertices, "bindVertex": paring1[0][0], "graph": {}}
+    for p1, p2 in zip(paring1, paring2):
+        connectVertex(g["graph"], p1)
+        connectVertex(g["graph"], p2)
+    graph = getGraph(g)
+
+    degrees = graph.getVertexDegree()
+    adjacencies = graph.getAllVertexAdjacency()
+
+    for v, d in degrees.items():
+        if d > 1:
+            v
+
+
+def isPMCompact(originGraph):
+    adjacencies = originGraph.getAllVertexAdjacency()
+    parings = paring(
+        adjacencies=adjacencies,
+        isParent=True,
+        maxGroupOfPairs=len(adjacencies.keys()) / 2
+    )
+
+
+
 def main():
     global GRAPHS
     global ACCEPTED_GRAPHS

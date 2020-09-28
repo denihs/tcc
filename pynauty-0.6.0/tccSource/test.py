@@ -10,6 +10,39 @@ ACCEPTED_GRAPHS = []
 GRAPHS_COUNT = 0
 ISOMORPHIC_GRAPH_COUNT = 0
 
+K4 = {
+    "numberOfVertex": 4,
+    "bindVertex": 0,
+    "graph": {
+        "0": [1, 2, 3],
+        "1": [2, 3],
+        "2": [3],
+    }
+}
+
+K33 = {
+    "numberOfVertex": 6,
+    "bindVertex": 0,
+    "graph": {
+        "0": [3, 4, 5],
+        "1": [3, 4, 5],
+        "2": [3, 4, 5],
+    }
+}
+
+S8 = {
+    "numberOfVertex": 8,
+    "bindVertex": 0,
+    "graph": {
+        "0": [1, 2, 5],
+        "1": [7, 3, 2],
+        "2": [7, 3],
+        "3": [4],
+        "4": [6, 5],
+        "5": [6],
+        "6": [7],
+    }
+}
 
 def getIsIsomorphic(g, h):
     return isomorphic(g, h)
@@ -328,6 +361,21 @@ def isPMCompact(originGraph):
     return True
 
 
+def createWheel(size):
+    g = {"numberOfVertex": size, "bindVertex": 0, "graph": {}}
+    for i in range(1, size):
+        nextV = i + 1
+        if nextV == size:
+            nextV = 1
+        beforeV = i - 1
+        if beforeV == 0:
+            beforeV = size - 1
+        connectVertex(g["graph"], (i, 0))
+        connectVertex(g["graph"], (i, nextV))
+        connectVertex(g["graph"], (i, beforeV))
+    return getGraph(g)
+
+
 def main():
     global GRAPHS
     global ACCEPTED_GRAPHS
@@ -347,6 +395,24 @@ def main():
     bindedGraph = bindGraph(g, h)
 
     twistEdges(bindedGraph)
+
+    queues = {}
+    for vertexNumber in range(4, 30, 2):
+        currentQueue = queues[vertexNumber]
+        if not currentQueue:
+            currentQueue = []
+
+        if vertexNumber == 4:
+            currentQueue.append(getGraph(K4))
+        if vertexNumber == 6:
+            currentQueue.append(getGraph(K33))
+        if vertexNumber == 8:
+            currentQueue.append(getGraph(S8))
+
+        if vertexNumber > 4:
+            currentQueue.append(createWheel(vertexNumber))
+
+
     count = 1
     for g in ACCEPTED_GRAPHS:
         if isPMCompact(g):

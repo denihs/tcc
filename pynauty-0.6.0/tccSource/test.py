@@ -134,7 +134,6 @@ def twistEdges(graph):
 
     for vertices in perm:
         g = deepcopy(graph)
-        print("{} {}".format(keys, vertices))
         for k, v in zip(keys, vertices):
             adj = g.getAllVertexAdjacency()
             g.connect_vertex(
@@ -185,6 +184,13 @@ def removePair(adjacencies, v1, v2):
     return newAdj
 
 
+def removeEdge(adjacencies, v1, v2):
+    newAdj = deepcopy(adjacencies)
+    newAdj[v1] = filterList(newAdj[v1], v2)
+    newAdj[v2] = filterList(newAdj[v2], v1)
+    return newAdj
+
+
 def isNeighbor(adjacencies, k1, k2):
     return k1 in adjacencies[k2]
 
@@ -193,7 +199,7 @@ def filterParing(adjacencies, PARINGS):
     paringsCopy = deepcopy(PARINGS)
     for p in paringsCopy:
         for v1, v2 in p:
-            if not isNeighbor(adjacencies, v1, v2):
+            if not isNeighbor(adjacencies, v1, v2) and p in PARINGS:
                 PARINGS.remove(p)
 
 
@@ -238,15 +244,36 @@ def connectVertex(g, pair):
     else:
         g[v1] = [v2]
 
-# TODO CONTINUAR DAQUI
-def findCircle(adjacencies, vertex, path=None, ):
-    if path is None:
-        path = []
+
+def findCycle(adjacencies, vertex, paths=None, isParent=False):
+    if paths is None:
+        paths = [[]]
+
+    if not len(adjacencies[vertex]):
+        lastPath = paths[-1]
+        if vertex == lastPath[0]:
+            paths.append([vertex])
+        else:
+            paths.append(deepcopy(lastPath))
+        lastPath.append(vertex)
+        return
+    paths[-1].append(vertex)
     for v in adjacencies[vertex]:
+        newAdj = removeEdge(adjacencies, vertex, v)
+        findCycle(newAdj, v, paths, False)
+    if isParent:
+        cycles = []
+        for p in paths:
+            if len(p) > 1 and p[0] == p[-1]:
+                for c in cycles:
+                    if sorted(c) == sorted(p):
+                        break
+                else:
+                    cycles.append(p)
+        return cycles
 
 
-
-def countCircles(nVertices, paring1, paring2):
+def countCycles(nVertices, paring1, paring2):
     g = {"numberOfVertex": nVertices, "bindVertex": paring1[0][0], "graph": {}}
     for p1, p2 in zip(paring1, paring2):
         connectVertex(g["graph"], p1)
@@ -256,19 +283,49 @@ def countCircles(nVertices, paring1, paring2):
     degrees = graph.getVertexDegree()
     adjacencies = graph.getAllVertexAdjacency()
 
+    count = 0
+    lastCycle = []
     for v, d in degrees.items():
         if d > 1:
-            v
+            foundCycles = findCycle(adjacencies, v, isParent=True)
+            amountFoundCycles = len(foundCycles)
+            if amountFoundCycles == 0:
+                continue
+
+            if amountFoundCycles > 1:
+                break
+
+            cycle = foundCycles[0]
+            cycle.remove(v)
+            if sorted(lastCycle) != sorted(cycle):
+                lastCycle = cycle
+                count += 1
+    else:
+        return count
+    # se for encontrado mais de um ciclo para um vertice
+    # já sabemos que não é PM compacto, então posso retorna qualquer número
+    # maior que 1
+    return 42
 
 
 def isPMCompact(originGraph):
     adjacencies = originGraph.getAllVertexAdjacency()
+
+    if originGraph.vertexAmount % 2 != 0:
+        print("Numero de vertices não deveria ser impar")
+        return False
+
     parings = paring(
         adjacencies=adjacencies,
         isParent=True,
         maxGroupOfPairs=len(adjacencies.keys()) / 2
     )
-
+    for p1, index in zip(parings, range(1, len(parings))):
+        for p2 in parings[index: -1]:
+            result = countCycles(originGraph.vertexAmount, p1, p2)
+            if result != 1:
+                return False
+    return True
 
 
 def main():
@@ -281,18 +338,6 @@ def main():
         data = json.load(jsonFile)
 
     g = getGraph(data[0])
-    adjacencies = g.getAllVertexAdjacency()
-    PARINGS = paring(
-        adjacencies=adjacencies,
-        isParent=True,
-        maxGroupOfPairs=len(adjacencies.keys())/2
-    )
-
-    count = 1
-    for p in PARINGS:
-        print("Paring {}: {}".format(count, p))
-        count += 1
-    return
 
     h = getGraph(data[1])
 
@@ -304,10 +349,11 @@ def main():
     twistEdges(bindedGraph)
     count = 1
     for g in ACCEPTED_GRAPHS:
-        print("-=-==- GRAFO {} -=-==- ".format(count))
-        print(g)
-        drawGraph(g, "graph-{}".format(count))
-        count += 1
+        if isPMCompact(g):
+            print("-=-==- GRAFO {} -=-==- ".format(count))
+            print(g)
+            drawGraph(g, "graph-{}".format(count))
+            count += 1
     print("TOTAL GRAFOS GERADOS: {}".format(GRAPHS_COUNT))
     print("TOTAL GRAFOS ISOMORFOS: {}".format(ISOMORPHIC_GRAPH_COUNT))
 

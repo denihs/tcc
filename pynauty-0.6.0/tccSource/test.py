@@ -9,6 +9,7 @@ GRAPHS = []
 ACCEPTED_GRAPHS = []
 GRAPHS_COUNT = 0
 ISOMORPHIC_GRAPH_COUNT = 0
+QUEUES_AMOUNT = 10
 
 K4 = {
     "numberOfVertex": 4,
@@ -376,31 +377,11 @@ def createWheel(size):
     return getGraph(g)
 
 
-def main():
-    global GRAPHS
-    global ACCEPTED_GRAPHS
-    global GRAPHS_COUNT
-    global ISOMORPHIC_GRAPH_COUNT
-
-    with open("grafosColagemRoda5v.json") as jsonFile:
-        data = json.load(jsonFile)
-
-    g = getGraph(data[0])
-
-    h = getGraph(data[1])
-
-    drawGraph(g, "graph-init-1", gFormat="kk")
-    drawGraph(h, "graph-init-2", gFormat="kk")
-
-    bindedGraph = bindGraph(g, h)
-
-    twistEdges(bindedGraph)
-
+def initiateQueues():
     queues = {}
-    for vertexNumber in range(4, 30, 2):
+    for vertexNumber in range(4, QUEUES_AMOUNT, 2):
+        queues[vertexNumber] = []
         currentQueue = queues[vertexNumber]
-        if not currentQueue:
-            currentQueue = []
 
         if vertexNumber == 4:
             currentQueue.append(getGraph(K4))
@@ -411,17 +392,57 @@ def main():
 
         if vertexNumber > 4:
             currentQueue.append(createWheel(vertexNumber))
+    return queues
 
 
+def selfPermute(queue, queues):
+    global ACCEPTED_GRAPHS
+    graphs = deepcopy(queue)
+    if len(graphs) == 1:
+        graphs.append(queue[0])
     count = 1
-    for g in ACCEPTED_GRAPHS:
-        if isPMCompact(g):
-            print("-=-==- GRAFO {} -=-==- ".format(count))
-            print(g)
-            drawGraph(g, "graph-{}".format(count))
-            count += 1
-    print("TOTAL GRAFOS GERADOS: {}".format(GRAPHS_COUNT))
-    print("TOTAL GRAFOS ISOMORFOS: {}".format(ISOMORPHIC_GRAPH_COUNT))
+    for g in graphs[0:-2]:
+        for h in graphs[count:-1]:
+            bindedGraph = bindGraph(g, h)
+            twistEdges(bindedGraph)
+            vertexAmount = bindedGraph.vertexAmount
+            for acc in ACCEPTED_GRAPHS:
+                if isPMCompact(acc):
+                    for x in queues[vertexAmount]:
+                        if not getIsIsomorphic(acc, x):
+                            queues[vertexAmount].append(acc)
+            ACCEPTED_GRAPHS = []
+        count += 1
+
+
+def permuteQueues(fistQueue, lastQueue, queues):
+    for g in fistQueue:
+        for h in lastQueue:
+            selfPermute([g, h], queues)
+
+
+def main():
+    global GRAPHS
+    global ACCEPTED_GRAPHS
+    global GRAPHS_COUNT
+    global ISOMORPHIC_GRAPH_COUNT
+
+    queues = initiateQueues()
+
+    for vertexNumber in range(4, QUEUES_AMOUNT, 2):
+        rangeValues = list(range(4, vertexNumber + 2, 2))
+
+        while len(rangeValues):
+            ACCEPTED_GRAPHS = []
+            if len(rangeValues) == 1:
+                selfPermute(queues[vertexNumber], queues)
+                rangeValues.pop(0)
+                continue
+            first = rangeValues.pop(0)
+            last = rangeValues.pop(-1)
+            permuteQueues(queues[first], queues[last], queues)
+
+    print(queues)
 
 
 main()

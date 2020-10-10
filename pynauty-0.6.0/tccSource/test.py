@@ -1,5 +1,6 @@
 from pynauty import isomorphic
 import json
+import os
 from GraphClass import GraphExt
 from copy import deepcopy
 from itertools import permutations
@@ -9,7 +10,7 @@ GRAPHS = []
 ACCEPTED_GRAPHS = []
 GRAPHS_COUNT = 0
 ISOMORPHIC_GRAPH_COUNT = 0
-QUEUES_AMOUNT = 10
+QUEUES_AMOUNT = 30
 
 K4 = {
     "numberOfVertex": 4,
@@ -45,6 +46,7 @@ S8 = {
     }
 }
 
+
 def getIsIsomorphic(g, h):
     return isomorphic(g, h)
 
@@ -74,6 +76,17 @@ def filterList(listValues, valuesToFilter):
     return list(x for x in listValues if x not in toFilter)
 
 
+def findBindVertex(g1, g2):
+    d1 = g1.getVertexDegree()
+    d2 = g2.getVertexDegree()
+
+    for k1, v1 in d1.items():
+        for k2, v2 in d2.items():
+            if v1 == v2:
+                return k1, k2
+    return None, None
+
+
 def bindGraph(g1, g2):
     if g1.vertexAmount < g2.vertexAmount:
         graph1 = g1
@@ -83,7 +96,11 @@ def bindGraph(g1, g2):
         graph2 = g1
 
     if graph1.getVertexDegree(graph1.bindVertex) != graph2.getVertexDegree(graph2.bindVertex):
-        raise Exception("bindGraph - grau dos vétices da colagem devem ser o mesmo")
+        d1, d2 = findBindVertex(g1, g2)
+        if d1 is None:
+            raise Exception("bindGraph - grau dos vétices da colagem devem ser o mesmo")
+        g1.setBindVertex(d1)
+        g2.setBindVertex(d2)
 
     graphAdjacency1 = graph1.getAllVertexAdjacency()
     graphAdjacency2 = graph2.getAllVertexAdjacency()
@@ -377,6 +394,18 @@ def createWheel(size):
     return getGraph(g)
 
 
+def append_record(record, name):
+    with open('./lists/{}'.format(name), 'a') as f:
+        json.dump(record, f, indent=4)
+        f.write(os.linesep)
+
+
+def registerGraph(graph):
+    gId = graph.getId()
+    drawGraph(graph, "{}".format(gId))
+    append_record(graph.getInfo(), "{}".format(gId.split("-")[0]))
+
+
 def initiateQueues():
     queues = {}
     for vertexNumber in range(4, QUEUES_AMOUNT, 2):
@@ -392,25 +421,34 @@ def initiateQueues():
 
         if vertexNumber > 4:
             currentQueue.append(createWheel(vertexNumber))
+    for graphs in queues.values():
+        count = 0
+        for g in graphs:
+            g.setId(count)
+            registerGraph(g)
+            count += 1
     return queues
 
 
 def selfPermute(queue, queues):
     global ACCEPTED_GRAPHS
     graphs = deepcopy(queue)
-    if len(graphs) == 1:
-        graphs.append(queue[0])
-    count = 1
-    for g in graphs[0:-2]:
-        for h in graphs[count:-1]:
+    count = 0
+    for g in graphs:
+        for h in graphs[count:]:
             bindedGraph = bindGraph(g, h)
             twistEdges(bindedGraph)
             vertexAmount = bindedGraph.vertexAmount
             for acc in ACCEPTED_GRAPHS:
                 if isPMCompact(acc):
                     for x in queues[vertexAmount]:
-                        if not getIsIsomorphic(acc, x):
-                            queues[vertexAmount].append(acc)
+                        if getIsIsomorphic(acc, x):
+                            break
+                    else:
+                        acc.setId(len(queues[vertexAmount]) - 1)
+                        queues[vertexAmount].append(acc)
+                        acc.setParents(g.getId(), h.getId())
+                        registerGraph(acc)
             ACCEPTED_GRAPHS = []
         count += 1
 
@@ -430,19 +468,23 @@ def main():
     queues = initiateQueues()
 
     for vertexNumber in range(4, QUEUES_AMOUNT, 2):
-        rangeValues = list(range(4, vertexNumber + 2, 2))
-
+        calculating = vertexNumber + 2
+        rangeValues = list(range(4, calculating, 2))
+        print("\n\n -=-=-=-=-=- CALCULANDO {} -=-=-=-=-=-".format(calculating))
+        print("rangeValues - {}".format(rangeValues))
         while len(rangeValues):
             ACCEPTED_GRAPHS = []
             if len(rangeValues) == 1:
+                print("solo - {}".format(rangeValues[0]))
                 selfPermute(queues[vertexNumber], queues)
                 rangeValues.pop(0)
                 continue
             first = rangeValues.pop(0)
             last = rangeValues.pop(-1)
+            print("first - {} | last - {}".format(first, last))
             permuteQueues(queues[first], queues[last], queues)
 
-    print(queues)
+
 
 
 main()

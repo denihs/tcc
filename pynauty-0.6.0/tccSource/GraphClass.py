@@ -11,6 +11,11 @@ class GraphExt(Graph):
         self.internalGraphEnd = None
         self.internalGraphVertexAmount = None
         self.externalGraphVertexAmount = None
+        self.id = None
+        self.parents = None
+
+    def setBindVertex(self, v):
+        self.bindVertex = v
 
     def getAdjacency(self):
         return self.adjacency_dict
@@ -71,3 +76,23 @@ class GraphExt(Graph):
     def setExternalGraphVertexAmount(self, amount):
         self.externalGraphVertexAmount = amount
 
+    def getId(self):
+        return self.id
+
+    def setId(self, index):
+        self.id = "{}-{}".format(self.vertexAmount, index)
+
+    def getParents(self):
+        return self.parents
+
+    def setParents(self, p1, p2):
+        self.id = "{} | {}".format(p1, p2)
+
+    def getInfo(self):
+        return {
+            "id": self.id,
+            "parents": self.parents,
+            "vertexAmount": self.vertexAmount,
+            "bindVertex": self.bindVertex,
+            "Adjacency": self.getAllVertexAdjacency(),
+        }

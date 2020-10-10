@@ -6,7 +6,6 @@ from copy import deepcopy
 from itertools import permutations
 import igraph
 
-GRAPHS = []
 ACCEPTED_GRAPHS = []
 GRAPHS_COUNT = 0
 ISOMORPHIC_GRAPH_COUNT = 0
@@ -167,7 +166,6 @@ def bindGraph(g1, g2):
 
 
 def twistEdges(graph):
-    global GRAPHS
     global GRAPHS_COUNT
     global ACCEPTED_GRAPHS
     global ISOMORPHIC_GRAPH_COUNT
@@ -460,7 +458,6 @@ def permuteQueues(fistQueue, lastQueue, queues):
 
 
 def main():
-    global GRAPHS
     global ACCEPTED_GRAPHS
     global GRAPHS_COUNT
     global ISOMORPHIC_GRAPH_COUNT
@@ -475,13 +472,13 @@ def main():
         while len(rangeValues):
             ACCEPTED_GRAPHS = []
             if len(rangeValues) == 1:
-                print("solo - {}".format(rangeValues[0]))
+                print("solo - {} -> {}".format(rangeValues[0], len(queues[vertexNumber])))
                 selfPermute(queues[vertexNumber], queues)
                 rangeValues.pop(0)
                 continue
             first = rangeValues.pop(0)
             last = rangeValues.pop(-1)
-            print("first - {} | last - {}".format(first, last))
+            print("first - {} -> {} | last - {} -> {}".format(first, len(queues[first]), last, len(queues[last])))
             permuteQueues(queues[first], queues[last], queues)
 
 

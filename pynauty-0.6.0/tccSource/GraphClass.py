@@ -2,10 +2,10 @@ from pynauty import Graph
 
 
 class GraphExt(Graph):
-    def __init__(self, vertexAmount, bindVertex=None, bindDegree=None):
+    def __init__(self, vertexAmount, bindDegree=None):
         super().__init__(vertexAmount)
         self.vertexAmount = vertexAmount
-        self.bindVertex = bindVertex
+        self.bindVertex = None
         self.bindDegree = bindDegree
         self.connections = {}
         self.internalGraphEnd = None
@@ -86,7 +86,7 @@ class GraphExt(Graph):
         return self.parents
 
     def setParents(self, p1, p2):
-        self.id = "{} | {}".format(p1, p2)
+        self.parents = "{} | {}".format(p1, p2)
 
     def getInfo(self):
         return {

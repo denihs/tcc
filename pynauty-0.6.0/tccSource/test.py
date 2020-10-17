@@ -51,7 +51,7 @@ def getIsIsomorphic(g, h):
 
 
 def getGraph(data):
-    g = GraphExt(data["numberOfVertex"], data["bindVertex"])
+    g = GraphExt(data["numberOfVertex"])
     graph = data["graph"]
     for v in graph:
         g.connect_vertex(int(v), graph[v])
@@ -94,12 +94,11 @@ def bindGraph(g1, g2):
         graph1 = g2
         graph2 = g1
 
-    if graph1.getVertexDegree(graph1.bindVertex) != graph2.getVertexDegree(graph2.bindVertex):
-        d1, d2 = findBindVertex(g1, g2)
-        if d1 is None:
-            raise Exception("bindGraph - grau dos vétices da colagem devem ser o mesmo")
-        g1.setBindVertex(d1)
-        g2.setBindVertex(d2)
+    v1, v2 = findBindVertex(graph1, graph2)
+    if v1 is None:
+        raise Exception("bindGraph - grau dos vétices da colagem devem ser o mesmo")
+    graph1.setBindVertex(v1)
+    graph2.setBindVertex(v2)
 
     graphAdjacency1 = graph1.getAllVertexAdjacency()
     graphAdjacency2 = graph2.getAllVertexAdjacency()
@@ -119,7 +118,7 @@ def bindGraph(g1, g2):
             map2[i] = elem
 
     # montando o grafo
-    g = GraphExt(newGraphSize, bindDegree=graph1.getVertexDegree(graph1.bindVertex))
+    g = GraphExt(newGraphSize)
     for i in range(newGraphSize):
         if i < graph1.vertexAmount - 1:
             g.connect_vertex(
@@ -172,9 +171,6 @@ def twistEdges(graph):
 
     connections = graph.connections
     connectionsLen = len(connections.keys())
-
-    if connectionsLen < 4:
-        return
 
     keys = list(connections.keys())
     perm = list(permutations(connections.values()))
@@ -430,25 +426,26 @@ def initiateQueues():
 
 def selfPermute(queue, queues):
     global ACCEPTED_GRAPHS
+    ACCEPTED_GRAPHS = []
+
     graphs = deepcopy(queue)
-    count = 0
-    for g in graphs:
-        for h in graphs[count:]:
-            bindedGraph = bindGraph(g, h)
-            twistEdges(bindedGraph)
-            vertexAmount = bindedGraph.vertexAmount
-            for acc in ACCEPTED_GRAPHS:
-                if isPMCompact(acc):
-                    for x in queues[vertexAmount]:
-                        if getIsIsomorphic(acc, x):
-                            break
-                    else:
-                        acc.setId(len(queues[vertexAmount]) - 1)
-                        queues[vertexAmount].append(acc)
-                        acc.setParents(g.getId(), h.getId())
-                        registerGraph(acc)
-            ACCEPTED_GRAPHS = []
-        count += 1
+    g, h = graphs
+
+    bindedGraph = bindGraph(g, h)
+    twistEdges(bindedGraph)
+    vertexAmount = bindedGraph.vertexAmount
+
+    for acc in ACCEPTED_GRAPHS:
+        if isPMCompact(acc):
+            # TODO deveria checar se os grafos da fila são isomorfos a este novo?
+            for x in queues[vertexAmount]:
+                if getIsIsomorphic(acc, x):
+                    break
+            else:
+                queues[vertexAmount].append(acc)
+                acc.setId(len(queues[vertexAmount]) - 1)
+                acc.setParents(g.getId(), h.getId())
+                registerGraph(acc)
 
 
 def permuteQueues(fistQueue, lastQueue, queues):
@@ -473,7 +470,7 @@ def main():
             ACCEPTED_GRAPHS = []
             if len(rangeValues) == 1:
                 print("solo - {} -> {}".format(rangeValues[0], len(queues[vertexNumber])))
-                selfPermute(queues[vertexNumber], queues)
+                permuteQueues(queues[vertexNumber], queues[vertexNumber], queues)
                 rangeValues.pop(0)
                 continue
             first = rangeValues.pop(0)

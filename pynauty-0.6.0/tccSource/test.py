@@ -339,7 +339,7 @@ def findCycle(adjacencies, vertex, paths=None, isParent=False):
                     cycles.append(p)
         return cycles
 
-
+# TODO rever essa funcao
 def countCycles(nVertices, paring1, paring2):
     g = {"numberOfVertex": nVertices, "bindVertex": paring1[0][0], "graph": {}}
     for p1, p2 in zip(paring1, paring2):
@@ -389,6 +389,7 @@ def isPMCompact(originGraph):
     )
 
     print("Graph: {}, parings: {}\n".format(originGraph.getId(), parings))
+    # TODO rever essa funcao - antes estava range(1, len(parings))
     for p1, index in zip(parings, range(len(parings))):
         for p2 in parings[index: -1]:
             result = countCycles(originGraph.vertexAmount, p1, p2)

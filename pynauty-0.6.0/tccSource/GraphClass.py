@@ -8,9 +8,6 @@ class GraphExt(Graph):
         self.bindVertex = None
         self.bindDegree = bindDegree
         self.connections = {}
-        self.internalGraphEnd = None
-        self.internalGraphVertexAmount = None
-        self.externalGraphVertexAmount = None
         self.id = None
         self.parents = None
 
@@ -66,15 +63,6 @@ class GraphExt(Graph):
 
     def setConnections(self, v1, v2):
         self.connections[v1] = v2
-
-    def setInternalGraphEnd(self, end):
-        self.internalGraphEnd = end
-
-    def setInternalGraphVertexAmount(self, amount):
-        self.internalGraphVertexAmount = amount
-
-    def setExternalGraphVertexAmount(self, amount):
-        self.externalGraphVertexAmount = amount
 
     def getId(self):
         return self.id

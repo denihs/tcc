@@ -1,4 +1,4 @@
-from pynauty import isomorphic
+from pynauty import isomorphic, autgrp
 import json
 import os
 from GraphClass import GraphExt
@@ -6,7 +6,6 @@ from copy import deepcopy
 from itertools import permutations
 import igraph
 
-ACCEPTED_GRAPHS = []
 GRAPHS_COUNT = 0
 ISOMORPHIC_GRAPH_COUNT = 0
 QUEUES_AMOUNT = 30
@@ -35,13 +34,14 @@ S8 = {
     "numberOfVertex": 8,
     "bindVertex": 0,
     "graph": {
-        "0": [1, 2, 5],
-        "1": [7, 3, 2],
-        "2": [7, 3],
-        "3": [4],
-        "4": [6, 5],
-        "5": [6],
-        "6": [7],
+        "0": [1, 2, 3, 4],
+        "1": [0, 2, 3, 4],
+        "2": [0, 1, 7],
+        "3": [0, 1, 6],
+        "4": [0, 1, 5],
+        "5": [4, 6, 7],
+        "6": [3, 5, 7],
+        "7": [2, 5, 6],
     }
 }
 
@@ -94,12 +94,6 @@ def bindGraph(g1, g2):
         graph1 = g2
         graph2 = g1
 
-    v1, v2 = findBindVertex(graph1, graph2)
-    if v1 is None:
-        raise Exception("bindGraph - grau dos vétices da colagem devem ser o mesmo")
-    graph1.setBindVertex(v1)
-    graph2.setBindVertex(v2)
-
     graphAdjacency1 = graph1.getAllVertexAdjacency()
     graphAdjacency2 = graph2.getAllVertexAdjacency()
     newGraphSize = graph1.vertexAmount + graph2.vertexAmount - 2
@@ -137,26 +131,25 @@ def bindGraph(g1, g2):
                 )
             )
 
-    # isso ajudará quando for necessário permutar um dos grafos na colagem
-    g.setInternalGraphEnd(len(map1.keys()) - 1)
-    g.setInternalGraphVertexAmount(len(map1.keys()))
-    g.setExternalGraphVertexAmount(len(map2.keys()))
-
     # conectando as partes dos grafos
     # descobre quem está com grau faltando no primeiro grafo
     # e adiciona uma aresta para todos os vértices dele
     gDegrees = g.getVertexDegree()
     graph1Degrees = graph1.getVertexDegree()
+    graph2Degrees = graph2.getVertexDegree()
     diffs = {}
+    diffs2 = []
     for key, degree in gDegrees.items():
         if key < graph1.vertexAmount - 1:
             if degree < graph1Degrees[map1[key]]:
                 diffs[key] = graph1Degrees[map1[key]] - degree
+        else:
+            if degree < graph2Degrees[map2[key]]:
+                diffs2.append(key)
 
-    mapKeys2 = list(map2.keys())
     for key, diff in diffs.items():
         if key < graph1.vertexAmount - 1:
-            p = mapKeys2.pop()
+            p = diffs2.pop()
             for i in range(diff):
                 g.setConnections(key, p)
                 g.connect_vertex(key, [p] + g.adjacency_dict[key])
@@ -164,18 +157,47 @@ def bindGraph(g1, g2):
     return g
 
 
-def twistEdges(graph):
-    global GRAPHS_COUNT
-    global ACCEPTED_GRAPHS
-    global ISOMORPHIC_GRAPH_COUNT
+def getVerticesByOrbit(orbits):
+    verticesByOrbit = {}
+    vertexCount = 0
+    for orbit in orbits:
+        verticesByOrbit[orbit] = vertexCount
+        vertexCount += 1
+    return verticesByOrbit
 
+
+def bindByOrbits(graph1, graph2):
+    bondedGraphs = []
+    orbits1 = autgrp(graph1)[3]
+    orbits2 = autgrp(graph2)[3]
+
+    verticesByOrbit1 = getVerticesByOrbit(orbits1)
+    verticesByOrbit2 = getVerticesByOrbit(orbits2)
+    for vertex1 in verticesByOrbit1.values():
+        for vertex2 in verticesByOrbit2.values():
+            g1VertexDegree = graph1.getVertexDegree(vertex1)
+            g2VertexDegree = graph2.getVertexDegree(vertex2)
+            if g1VertexDegree != g2VertexDegree:
+                continue
+
+            g1 = deepcopy(graph1)
+            g2 = deepcopy(graph2)
+
+            g1.setBindVertex(vertex1)
+            g2.setBindVertex(vertex2)
+
+            bondedGraphs.append(bindGraph(g1, g2))
+    return bondedGraphs
+
+
+def twistEdges(graph, alreadyAccepted):
+    global GRAPHS_COUNT
+
+    newAcceptedGraphs = []
     connections = graph.connections
-    connectionsLen = len(connections.keys())
 
     keys = list(connections.keys())
     perm = list(permutations(connections.values()))
-
-    ACCEPTED_GRAPHS.append(graph)
 
     for vertices in perm:
         g = deepcopy(graph)
@@ -195,13 +217,13 @@ def twistEdges(graph):
             )
 
         GRAPHS_COUNT += 1
-
-        for acceptedGraph in ACCEPTED_GRAPHS:
-            if getIsIsomorphic(g, acceptedGraph):
-                ISOMORPHIC_GRAPH_COUNT += 1
-                break
-        else:
-            ACCEPTED_GRAPHS.append(g)
+        if isPMCompact(g):
+            for acceptedGraph in alreadyAccepted + newAcceptedGraphs:
+                if getIsIsomorphic(g, acceptedGraph):
+                    break
+            else:
+                newAcceptedGraphs.append(g)
+    return newAcceptedGraphs
 
 
 def drawGraph(g, name=None, gFormat="circular"):
@@ -365,11 +387,14 @@ def isPMCompact(originGraph):
         isParent=True,
         maxGroupOfPairs=len(adjacencies.keys()) / 2
     )
-    for p1, index in zip(parings, range(1, len(parings))):
+
+    print("Graph: {}, parings: {}\n".format(originGraph.getId(), parings))
+    for p1, index in zip(parings, range(len(parings))):
         for p2 in parings[index: -1]:
             result = countCycles(originGraph.vertexAmount, p1, p2)
             if result != 1:
                 return False
+
     return True
 
 
@@ -394,9 +419,17 @@ def append_record(record, name):
         f.write(os.linesep)
 
 
+def isThreeRegular(graph):
+    graphDegree = graph.getVertexDegree()
+    degrees = list(graphDegree.values())
+    return degrees.count(degrees[0]) == len(degrees) and degrees[0] == 3
+
+
 def registerGraph(graph):
     gId = graph.getId()
-    drawGraph(graph, "{}".format(gId))
+    if isThreeRegular(graph):
+        drawGraph(graph, "{}".format(gId))
+        append_record(graph.getInfo(), "{}-compact".format(gId.split("-")[0]))
     append_record(graph.getInfo(), "{}".format(gId.split("-")[0]))
 
 
@@ -424,20 +457,17 @@ def initiateQueues():
     return queues
 
 
-def selfPermute(queue, queues):
-    global ACCEPTED_GRAPHS
-    ACCEPTED_GRAPHS = []
-
+def selfPermute(queue, queues, alreadyAcceptedGraphs):
     graphs = deepcopy(queue)
     g, h = graphs
 
-    bindedGraph = bindGraph(g, h)
-    twistEdges(bindedGraph)
-    vertexAmount = bindedGraph.vertexAmount
-
-    for acc in ACCEPTED_GRAPHS:
-        if isPMCompact(acc):
-            # TODO deveria checar se os grafos da fila são isomorfos a este novo?
+    bondedGraphs = bindByOrbits(g, h)
+    for bondedGraph in bondedGraphs:
+        acceptedGraphs = twistEdges(bondedGraph, alreadyAcceptedGraphs)
+        vertexAmount = bondedGraph.vertexAmount
+        #print("QUEUE {} g1 {} g2 {} length {} aceitos {} ja aceitos {}".format(vertexAmount, g.vertexAmount, h.vertexAmount, len(queues[vertexAmount]), len(acceptedGraphs), len(alreadyAcceptedGraphs)))
+        for acc in acceptedGraphs:
+            alreadyAcceptedGraphs.append(acc)
             for x in queues[vertexAmount]:
                 if getIsIsomorphic(acc, x):
                     break
@@ -448,14 +478,13 @@ def selfPermute(queue, queues):
                 registerGraph(acc)
 
 
-def permuteQueues(fistQueue, lastQueue, queues):
+def permuteQueues(fistQueue, lastQueue, queues, alreadyAcceptedGraphs):
     for g in fistQueue:
         for h in lastQueue:
-            selfPermute([g, h], queues)
+            selfPermute([g, h], queues, alreadyAcceptedGraphs)
 
 
 def main():
-    global ACCEPTED_GRAPHS
     global GRAPHS_COUNT
     global ISOMORPHIC_GRAPH_COUNT
 
@@ -466,17 +495,18 @@ def main():
         rangeValues = list(range(4, calculating, 2))
         print("\n\n -=-=-=-=-=- CALCULANDO {} -=-=-=-=-=-".format(calculating))
         print("rangeValues - {}".format(rangeValues))
+        alreadyAcceptedGraphs = []
         while len(rangeValues):
-            ACCEPTED_GRAPHS = []
             if len(rangeValues) == 1:
-                print("solo - {} -> {}".format(rangeValues[0], len(queues[vertexNumber])))
-                permuteQueues(queues[vertexNumber], queues[vertexNumber], queues)
+                solo = rangeValues[0]
+                print("solo - {} -> {}".format(solo, len(queues[solo])))
+                permuteQueues(queues[solo], queues[solo], queues, alreadyAcceptedGraphs)
                 rangeValues.pop(0)
                 continue
             first = rangeValues.pop(0)
             last = rangeValues.pop(-1)
             print("first - {} -> {} | last - {} -> {}".format(first, len(queues[first]), last, len(queues[last])))
-            permuteQueues(queues[first], queues[last], queues)
+            permuteQueues(queues[first], queues[last], queues, alreadyAcceptedGraphs)
 
 
 

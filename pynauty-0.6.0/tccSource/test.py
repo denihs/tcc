@@ -191,8 +191,6 @@ def bindByOrbits(graph1, graph2):
 
 
 def twistEdges(graph, alreadyAccepted):
-    global GRAPHS_COUNT
-
     newAcceptedGraphs = []
     connections = graph.connections
 
@@ -216,13 +214,11 @@ def twistEdges(graph, alreadyAccepted):
                 )
             )
 
-        GRAPHS_COUNT += 1
-        if isPMCompact(g):
-            for acceptedGraph in alreadyAccepted + newAcceptedGraphs:
-                if getIsIsomorphic(g, acceptedGraph):
-                    break
-            else:
-                newAcceptedGraphs.append(g)
+        for acceptedGraph in alreadyAccepted + newAcceptedGraphs:
+            if getIsIsomorphic(g, acceptedGraph):
+                break
+        else:
+            newAcceptedGraphs.append(g)
     return newAcceptedGraphs
 
 
@@ -262,46 +258,55 @@ def isNeighbor(adjacencies, k1, k2):
     return k1 in adjacencies[k2]
 
 
+def vertexShowsTwice(parings, v1, v2):
+    count = 0
+    for p in parings:
+        if v1 in p or v2 in p:
+            count += 1
+    return count > 1
+
+
 def filterParing(adjacencies, PARINGS):
     paringsCopy = deepcopy(PARINGS)
-    for p in paringsCopy:
-        for v1, v2 in p:
-            if not isNeighbor(adjacencies, v1, v2) and p in PARINGS:
-                PARINGS.remove(p)
+    parings = deepcopy(PARINGS)
+    for paringsGroup in paringsCopy:
+        for p in paringsGroup:
+            v1, v2 = p
+            if not isNeighbor(adjacencies, v1, v2) or vertexShowsTwice(paringsGroup, v1, v2):
+                parings.remove(paringsGroup)
+    if len(parings) == 0:
+        return [[]]
+    return parings
 
 
-def paring(adjacencies, isParent, maxGroupOfPairs, PARINGS=None):
+def paring(adjacencies, PARINGS=None, listParing=None):
     if PARINGS is None:
         PARINGS = []
+    if listParing is None:
+        listParing = []
     adjacencyKeys = list(adjacencies.keys())
     # Nunca deveriamos entrar aqui
-    if len(adjacencyKeys) < 2:
+    if len(adjacencyKeys) == 0:
+        return
+    if len(adjacencyKeys) == 1:
         print("GRAFO COM NUMERO IMPAR DE VERTICES")
         return
 
     if len(adjacencyKeys) == 2:
-        PARINGS[-1].append((adjacencyKeys[0], adjacencyKeys[1]))
-        return
+        PARINGS.append(listParing + [(adjacencyKeys[0], adjacencyKeys[1])])
 
     parentVertex = list(adjacencyKeys)[0]
 
     parentNeighbors = adjacencies[parentVertex]
-
     for n in parentNeighbors:
-        newPair = (parentVertex, n)
-        if isParent:
-            PARINGS.append([newPair])
-        else:
-            lastParing = PARINGS[-1]
-            if len(lastParing) == maxGroupOfPairs:
-                PARINGS.append(lastParing[0:-2] + [newPair])
-            else:
-                lastParing.append(newPair)
         newAdj = removePair(adjacencies, parentVertex, n)
-        paring(newAdj, False, maxGroupOfPairs, PARINGS)
-    if isParent:
-        filterParing(adjacencies, PARINGS)
-        return PARINGS
+        newPair = (parentVertex, n)
+        newList = deepcopy(listParing) + [newPair]
+        paring(newAdj, PARINGS, newList)
+
+    if parentVertex == 0:
+        PARINGS = filterParing(adjacencies, PARINGS, )
+    return PARINGS
 
 
 def connectVertex(g, pair):
@@ -339,7 +344,7 @@ def findCycle(adjacencies, vertex, paths=None, isParent=False):
                     cycles.append(p)
         return cycles
 
-# TODO rever essa funcao
+
 def countCycles(nVertices, paring1, paring2):
     g = {"numberOfVertex": nVertices, "bindVertex": paring1[0][0], "graph": {}}
     for p1, p2 in zip(paring1, paring2):
@@ -384,18 +389,23 @@ def isPMCompact(originGraph):
 
     parings = paring(
         adjacencies=adjacencies,
-        isParent=True,
-        maxGroupOfPairs=len(adjacencies.keys()) / 2
     )
+    result = 0
 
-    print("Graph: {}, parings: {}\n".format(originGraph.getId(), parings))
-    # TODO rever essa funcao - antes estava range(1, len(parings))
-    for p1, index in zip(parings, range(len(parings))):
-        for p2 in parings[index: -1]:
+    paringsLen = len(parings)
+
+    if paringsLen < 2:
+        return False
+
+    for p1, index in zip(parings, range(paringsLen)):
+        for p2 in parings[index + 1:]:
             result = countCycles(originGraph.vertexAmount, p1, p2)
             if result != 1:
                 return False
-
+    # Nunca deveria acontecer isso aqui, mas just in case...
+    if result == 0:
+        print("WARNING - Resultado igual a ZERO na função isPMCompact")
+        return False
     return True
 
 
@@ -426,9 +436,9 @@ def isThreeRegular(graph):
     return degrees.count(degrees[0]) == len(degrees) and degrees[0] == 3
 
 
-def registerGraph(graph):
+def registerGraph(graph, isGraphPmCompactAndThreeRegular=False):
     gId = graph.getId()
-    if isThreeRegular(graph):
+    if isGraphPmCompactAndThreeRegular:
         drawGraph(graph, "{}".format(gId))
         append_record(graph.getInfo(), "{}-compact".format(gId.split("-")[0]))
     append_record(graph.getInfo(), "{}".format(gId.split("-")[0]))
@@ -461,28 +471,23 @@ def initiateQueues():
 def selfPermute(queue, queues, alreadyAcceptedGraphs):
     graphs = deepcopy(queue)
     g, h = graphs
-
     bondedGraphs = bindByOrbits(g, h)
     for bondedGraph in bondedGraphs:
         acceptedGraphs = twistEdges(bondedGraph, alreadyAcceptedGraphs)
         vertexAmount = bondedGraph.vertexAmount
-        #print("QUEUE {} g1 {} g2 {} length {} aceitos {} ja aceitos {}".format(vertexAmount, g.vertexAmount, h.vertexAmount, len(queues[vertexAmount]), len(acceptedGraphs), len(alreadyAcceptedGraphs)))
         for acc in acceptedGraphs:
-            alreadyAcceptedGraphs.append(acc)
-            for x in queues[vertexAmount]:
-                if getIsIsomorphic(acc, x):
-                    break
-            else:
+            if isPMCompact(acc):
+                alreadyAcceptedGraphs.append(acc)
                 queues[vertexAmount].append(acc)
                 acc.setId(len(queues[vertexAmount]) - 1)
                 acc.setParents(g.getId(), h.getId())
-                registerGraph(acc)
+                registerGraph(acc, isThreeRegular(acc))
 
 
-def permuteQueues(fistQueue, lastQueue, queues, alreadyAcceptedGraphs):
-    for g in fistQueue:
+def permuteQueues(first, lastQueue, queues, alreadyAcceptedGraphs):
+    for g in first:
         for h in lastQueue:
-            selfPermute([g, h], queues, alreadyAcceptedGraphs)
+            selfPermute([deepcopy(g), deepcopy(h)], queues, alreadyAcceptedGraphs)
 
 
 def main():
@@ -496,7 +501,7 @@ def main():
         rangeValues = list(range(4, calculating, 2))
         print("\n\n -=-=-=-=-=- CALCULANDO {} -=-=-=-=-=-".format(calculating))
         print("rangeValues - {}".format(rangeValues))
-        alreadyAcceptedGraphs = []
+        alreadyAcceptedGraphs = queues[calculating]
         while len(rangeValues):
             if len(rangeValues) == 1:
                 solo = rangeValues[0]
@@ -510,6 +515,93 @@ def main():
             permuteQueues(queues[first], queues[last], queues, alreadyAcceptedGraphs)
 
 
+def drawProfessorsGraphs():
+    g1 = [
+        (0, 9),
+        (0, 7),
+        (0, 8),
+        (1, 3),
+        (1, 4),
+        (1, 5),
+        (2, 9),
+        (2, 6),
+        (2, 5),
+        (3, 4),
+        (3, 8),
+        (4, 7),
+        (5, 7),
+        (6, 9),
+        (6, 8),
+    ]
 
+    g2 = [
+        (0, 7),
+        (0, 9),
+        (0, 8),
+        (1, 6),
+        (1, 2),
+        (1, 4),
+        (2, 3),
+        (2, 5),
+        (3, 9),
+        (3, 5),
+        (4, 6),
+        (4, 8),
+        (5, 7),
+        (6, 7),
+        (8, 9),
+    ]
+
+    g3 = [
+        (0, 8),
+        (0, 9),
+        (0, 7),
+        (1, 4),
+        (1, 6),
+        (1, 3),
+        (2, 4),
+        (2, 5),
+        (2, 3),
+        (3, 9),
+        (4, 8),
+        (5, 6),
+        (5, 7),
+        (6, 7),
+        (8, 9),
+    ]
+
+    g4 = [
+        (0, 8),
+        (0, 7),
+        (0, 9),
+        (1, 5),
+        (1, 6),
+        (1, 9),
+        (2, 6),
+        (2, 8),
+        (2, 4),
+        (3, 7),
+        (3, 4),
+        (3, 5),
+        (4, 9),
+        (5, 8),
+        (6, 7),
+    ]
+
+    count = 0
+    graphs = []
+    for g in [g1, g2, g3, g4]:
+        h = {"numberOfVertex": 10, "bindVertex": 0, "graph": {}}
+        for p in g:
+            connectVertex(h["graph"], p)
+        graphs.append(getGraph(h))
+    for g in graphs:
+        print(count)
+        print(isPMCompact(g))
+        print(isThreeRegular(g))
+        count += 1
+
+
+#drawProfessorsGraphs()
 
 main()

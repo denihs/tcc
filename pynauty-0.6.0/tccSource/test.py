@@ -45,6 +45,24 @@ S8 = {
     }
 }
 
+WANG = {
+    "numberOfVertex": 12,
+    "bindVertex": 0,
+    "graph": {
+        "0": [1, 4, 7],
+        "1": [0, 2, 9],
+        "2": [1, 3, 10],
+        "3": [2, 4, 11],
+        "4": [0, 3, 5],
+        "5": [4, 6, 10],
+        "6": [5, 7, 11],
+        "7": [0, 6, 8],
+        "8": [7, 9, 10],
+        "9": [1, 8, 11],
+        "10": [2, 5, 8],
+        "11": [3, 6, 9],
+    }
+}
 
 def getIsIsomorphic(g, h):
     return isomorphic(g, h)
@@ -213,7 +231,8 @@ def twistEdges(graph, alreadyAccepted):
                     )
                 )
             )
-
+        if not isPMCompact(g):
+            continue
         for acceptedGraph in alreadyAccepted + newAcceptedGraphs:
             if getIsIsomorphic(g, acceptedGraph):
                 break
@@ -457,6 +476,8 @@ def initiateQueues():
             currentQueue.append(getGraph(K33))
         if vertexNumber == 8:
             currentQueue.append(getGraph(S8))
+        if vertexNumber == 12:
+            currentQueue.append(getGraph(WANG))
 
         if vertexNumber > 4:
             currentQueue.append(createWheel(vertexNumber))
@@ -477,12 +498,11 @@ def selfPermute(queue, queues, alreadyAcceptedGraphs):
         acceptedGraphs = twistEdges(bondedGraph, alreadyAcceptedGraphs)
         vertexAmount = bondedGraph.vertexAmount
         for acc in acceptedGraphs:
-            if isPMCompact(acc):
-                alreadyAcceptedGraphs.append(acc)
-                queues[vertexAmount].append(acc)
-                acc.setId(len(queues[vertexAmount]) - 1)
-                acc.setParents(g.getId(), h.getId())
-                registerGraph(acc, isThreeRegular(acc))
+            alreadyAcceptedGraphs.append(acc)
+            queues[vertexAmount].append(acc)
+            acc.setId(len(queues[vertexAmount]) - 1)
+            acc.setParents(g.getId(), h.getId())
+            registerGraph(acc, isThreeRegular(acc))
 
 
 def permuteQueues(first, lastQueue, queues, alreadyAcceptedGraphs):
@@ -502,7 +522,7 @@ def main():
         rangeValues = list(range(4, calculating, 2))
         print("\n\n -=-=-=-=-=- CALCULANDO {} -=-=-=-=-=-".format(calculating))
         print("rangeValues - {}".format(rangeValues))
-        alreadyAcceptedGraphs = queues[calculating]
+        alreadyAcceptedGraphs = []
         while len(rangeValues):
             if len(rangeValues) == 1:
                 solo = rangeValues[0]
@@ -516,129 +536,135 @@ def main():
             permuteQueues(queues[first], queues[last], queues, alreadyAcceptedGraphs)
 
 
-def drawProfessorsGraphs():
+def drawProfessorsGraphs(fgraphs):
+    print("drawProfessorsGraphs")
     g1 = [
-        (0, 12),
-        (0, 13),
         (0, 11),
+        (0, 9),
+        (0, 10),
         (1, 4),
+        (1, 5),
         (1, 2),
-        (1, 7),
-        (2, 5),
+        (2, 4),
         (2, 3),
-        (3, 5),
-        (3, 8),
-        (4, 6),
-        (4, 7),
-        (5, 10),
-        (6, 8),
+        (3, 7),
+        (3, 6),
+        (4, 10),
+        (5, 9),
+        (5, 6),
         (6, 9),
-        (7, 13),
-        (8, 12),
-        (9, 10),
-        (9, 11),
-        (10, 11),
-        (12, 13),
+        (7, 11),
+        (7, 8),
+        (8, 11),
+        (8, 10),
     ]
 
     g2 = [
-        (0, 12),
+        (0, 10),
         (0, 11),
-        (0, 13),
-        (1, 6),
-        (1, 4),
-        (1, 8),
-        (2, 5),
+        (0, 9),
+        (1, 2),
+        (1, 7),
+        (1, 3),
         (2, 8),
-        (2, 3),
-        (3, 5),
+        (2, 4),
         (3, 7),
+        (3, 4),
         (4, 6),
-        (4, 7),
-        (5, 10),
-        (6, 9),
-        (7, 13),
-        (8, 12),
-        (9, 10),
-        (9, 11),
+        (5, 11),
+        (5, 6),
+        (5, 8),
+        (6, 10),
+        (7, 9),
+        (8, 9),
         (10, 11),
-        (12, 13),
     ]
 
     g3 = [
+        (0, 9),
+        (0, 10),
         (0, 11),
-        (0, 12),
-        (0, 13),
-        (1, 10),
-        (1, 7),
+        (1, 4),
+        (1, 6),
         (1, 8),
-        (2, 6),
+        (2, 3),
         (2, 5),
-        (2, 4),
-        (3, 9),
-        (3, 10),
+        (2, 7),
         (3, 4),
-        (4, 9),
-        (5, 8),
-        (5, 12),
-        (6, 11),
-        (6, 7),
-        (7, 11),
-        (8, 13),
-        (9, 13),
-        (10, 12),
+        (3, 5),
+        (4, 6),
+        (5, 11),
+        (6, 10),
+        (7, 9),
+        (7, 8),
+        (8, 9),
+        (10, 11),
     ]
 
     g4 = [
+        (0, 10),
+        (0, 9),
         (0, 11),
-        (0, 12),
-        (0, 13),
-        (1, 4),
-        (1, 9),
-        (1, 7),
-        (2, 8),
+        (1, 2),
+        (1, 3),
+        (1, 8),
         (2, 3),
-        (2, 9),
-        (3, 8),
-        (3, 10),
-        (4, 10),
+        (2, 6),
+        (3, 5),
         (4, 6),
-        (5, 6),
-        (5, 13),
-        (5, 7),
-        (6, 12),
-        (7, 11),
-        (8, 11),
-        (9, 12),
-        (10, 13),
+        (4, 7),
+        (4, 5),
+        (5, 11),
+        (6, 10),
+        (7, 9),
+        (7, 8),
+        (8, 9),
+        (10, 11),
     ]
     g5 = [
+        (0, 9),
         (0, 11),
-        (0, 12),
-        (0, 13),
-        (1, 8),
-        (1, 6),
+        (0, 10),
         (1, 2),
-        (2, 7),
-        (2, 5),
-        (3, 6),
-        (3, 8),
-        (3, 9),
-        (4, 7),
-        (4, 10),
+        (1, 7),
+        (1, 8),
+        (2, 6),
+        (2, 8),
+        (3, 7),
+        (3, 5),
+        (3, 10),
+        (4, 9),
+        (4, 6),
         (4, 5),
-        (5, 10),
-        (6, 9),
-        (7, 13),
-        (8, 12),
-        (9, 11),
-        (10, 11),
-        (12, 13),
+        (5, 11),
+        (6, 10),
+        (7, 9),
+        (8, 11),
+    ]
+    g6 = [
+        (0, 9),
+        (0, 11),
+        (0, 10),
+        (1, 2),
+        (1, 6),
+        (1, 8),
+        (2, 5),
+        (2, 7),
+        (3, 6),
+        (3, 11),
+        (3, 7),
+        (4, 5),
+        (4, 8),
+        (4, 10),
+        (5, 11),
+        (6, 10),
+        (7, 9),
+        (8, 9),
     ]
     count = 0
     graphs = []
-    for g in [g1, g2, g3, g4, g5]:
-        h = {"numberOfVertex": 14, "bindVertex": 0, "graph": {}}
+    for g in [g1, g2, g3, g4, g5, g6]:
+        h = {"numberOfVertex": 12, "bindVertex": 0, "graph": {}}
         for p in g:
             connectVertex(h["graph"], p)
         graphs.append(getGraph(h))
@@ -648,66 +674,88 @@ def drawProfessorsGraphs():
         print(isThreeRegular(g))
         count += 1
 
-    print("Test iso")
+    print("\nSELF TEST ISO PROFESSOR GRAPHS\n")
     count = 1
     for g in graphs:
-        internalCount = count
+        internalCount = 0
         for h in graphs[count:]:
-            print("Testing {} {} -> {}".format(count-1, internalCount, getIsIsomorphic(g, h)))
+            print("Testing {} {} -> {}".format(count, internalCount, getIsIsomorphic(g, h)))
             internalCount += 1
         count += 1
 
+    print("\nSELF TEST ISO BOTH GRAPHS\n")
+    count = 0
+    for g in graphs:
+        internalCount = 0
+        for h in fgraphs:
+            if getIsIsomorphic(g, h):
+                print("Testing {} {} -> {}".format(count, internalCount, True))
+            internalCount += 1
+        count += 1
+    print("ALONE {}".format(getIsIsomorphic(graphs[5], getGraph(WANG))))
+    drawGraph(graphs[5], "PROFESSOR")
+    drawGraph(fgraphs[1], "MINE")
 
 def testGraphs():
     gs = [{
         "0": [
             1,
-            4,
-            9
+            2,
+            11
         ],
         "1": [
             0,
             2,
-            7
+            6
         ],
         "2": [
+            0,
             1,
-            3,
             5
         ],
         "3": [
-            8,
-            2,
-            4
+            4,
+            5,
+            8
         ],
         "4": [
-            0,
             3,
-            6
+            5,
+            7
         ],
         "5": [
-            9,
-            6,
+            3,
+            4,
             2
         ],
         "6": [
-            5,
+            8,
             7,
-            4
+            1
         ],
         "7": [
             6,
-            8,
-            1
+            4,
+            10
         ],
         "8": [
-            7,
-            9,
-            3
+            6,
+            3,
+            9
         ],
         "9": [
-            8,
-            5,
+            11,
+            10,
+            8
+        ],
+        "10": [
+            11,
+            9,
+            7
+        ],
+        "11": [
+            10,
+            9,
             0
         ]
     },
@@ -720,47 +768,57 @@ def testGraphs():
             "1": [
                 0,
                 2,
-                6
+                7
             ],
             "2": [
                 0,
                 1,
-                5
+                6
             ],
             "3": [
                 4,
                 5,
-                9
+                8
             ],
             "4": [
                 3,
                 5,
-                6
+                7
             ],
             "5": [
                 3,
                 4,
-                2
-            ],
-            "6": [
-                4,
-                7,
-                1
-            ],
-            "7": [
-                9,
-                8,
                 6
             ],
+            "6": [
+                5,
+                11,
+                2
+            ],
+            "7": [
+                4,
+                10,
+                1
+            ],
             "8": [
+                3,
                 9,
-                7,
                 0
             ],
             "9": [
-                8,
-                7,
-                3
+                11,
+                10,
+                8
+            ],
+            "10": [
+                11,
+                9,
+                7
+            ],
+            "11": [
+                10,
+                9,
+                6
             ]
         },
 
@@ -768,7 +826,7 @@ def testGraphs():
             "0": [
                 1,
                 2,
-                6
+                5
             ],
             "1": [
                 0,
@@ -782,46 +840,56 @@ def testGraphs():
             ],
             "3": [
                 4,
-                9,
+                8,
                 2
             ],
             "4": [
                 3,
-                5,
+                6,
                 1
             ],
             "5": [
                 6,
-                4,
-                8
+                11,
+                0
             ],
             "6": [
                 5,
                 7,
-                0
+                4
             ],
             "7": [
-                9,
                 8,
-                6
+                6,
+                10
             ],
             "8": [
-                9,
                 7,
-                5
-            ],
-            "9": [
-                8,
-                7,
-                3
-            ]
-        },
-        {
-            "0": [
-                1,
-                2,
+                3,
                 9
             ],
+            "9": [
+                11,
+                10,
+                8
+            ],
+            "10": [
+                11,
+                9,
+                7
+            ],
+            "11": [
+                10,
+                9,
+                5
+            ]
+        },
+        {
+            "0": [
+                1,
+                2,
+                7
+            ],
             "1": [
                 0,
                 2,
@@ -830,17 +898,79 @@ def testGraphs():
             "2": [
                 0,
                 1,
-                5
+                4
             ],
             "3": [
+                4,
                 5,
-                6,
                 8
             ],
             "4": [
+                3,
                 5,
-                6,
+                2
+            ],
+            "5": [
+                3,
+                4,
+                6
+            ],
+            "6": [
+                5,
+                11,
+                1
+            ],
+            "7": [
+                8,
+                10,
+                0
+            ],
+            "8": [
+                7,
+                3,
+                9
+            ],
+            "9": [
+                11,
+                10,
+                8
+            ],
+            "10": [
+                11,
+                9,
                 7
+            ],
+            "11": [
+                10,
+                9,
+                6
+            ]
+        },
+        {
+            "0": [
+                1,
+                2,
+                10
+            ],
+            "1": [
+                0,
+                2,
+                7
+            ],
+            "2": [
+                0,
+                1,
+                5
+            ],
+            "3": [
+                4,
+                5,
+                8
+            ],
+            "4": [
+                3,
+                5,
+                11
             ],
             "5": [
                 3,
@@ -848,36 +978,46 @@ def testGraphs():
                 2
             ],
             "6": [
-                3,
-                4,
-                1
+                8,
+                7,
+                9
             ],
             "7": [
-                9,
                 8,
-                4
+                6,
+                1
             ],
             "8": [
-                9,
                 7,
+                6,
                 3
             ],
             "9": [
-                8,
-                7,
+                11,
+                10,
+                6
+            ],
+            "10": [
+                11,
+                9,
                 0
+            ],
+            "11": [
+                4,
+                10,
+                9
             ]
         },
         {
             "0": [
                 1,
                 2,
-                5
+                11
             ],
             "1": [
                 0,
                 2,
-                4
+                6
             ],
             "2": [
                 0,
@@ -885,63 +1025,76 @@ def testGraphs():
                 3
             ],
             "3": [
-                6,
-                9,
+                4,
+                8,
                 2
             ],
             "4": [
-                6,
-                8,
-                1
+                5,
+                3,
+                10
             ],
             "5": [
                 6,
-                7,
-                0
+                4,
+                7
             ],
             "6": [
-                3,
-                4,
-                5
+                5,
+                9,
+                1
             ],
             "7": [
-                9,
+                11,
                 8,
                 5
             ],
             "8": [
+                3,
                 9,
-                7,
-                4
+                7
             ],
             "9": [
+                10,
                 8,
+                6
+            ],
+            "10": [
+                11,
+                9,
+                4
+            ],
+            "11": [
+                10,
                 7,
-                3
+                0
             ]
         }
     ]
     count = 0
     graphs = []
     for g in gs:
-        h = {"numberOfVertex": 10, "bindVertex": 0, "graph": g}
+        h = {"numberOfVertex": 12, "bindVertex": 0, "graph": g}
         graphs.append(getGraph(h))
     for g in graphs:
         print(count)
         print(isPMCompact(g))
         print(isThreeRegular(g))
         count += 1
+
+    print("\nSELF TEST ISO MINE GRAPHS\n")
     count = 1
-    print("Test iso")
     for g in graphs:
-        internalCount = count
+        internalCount = 0
         for h in graphs[count:]:
-            print("Testing {} {} -> {}".format(count-1, internalCount, getIsIsomorphic(g, h)))
+            print("Testing {} {} -> {}".format(count, internalCount, getIsIsomorphic(g, h)))
             internalCount += 1
         count += 1
+    drawProfessorsGraphs(graphs)
 
-drawProfessorsGraphs()
+
+#drawProfessorsGraphs()
 
 #testGraphs()
 
-#main()
+main()

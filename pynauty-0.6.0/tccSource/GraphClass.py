@@ -2,14 +2,16 @@ from pynauty import Graph
 
 
 class GraphExt(Graph):
-    def __init__(self, vertexAmount, bindDegree=None):
+    def __init__(self, vertexAmount, bindVertex=None, isSolid=False, isK33=False):
         super().__init__(vertexAmount)
         self.vertexAmount = vertexAmount
         self.bindVertex = None
-        self.bindDegree = bindDegree
+        self.bindVertex = bindVertex
         self.connections = {}
         self.id = None
         self.parents = None
+        self.isSolid = isSolid
+        self.isK33 = isK33
 
     def setBindVertex(self, v):
         self.bindVertex = v
@@ -82,5 +84,7 @@ class GraphExt(Graph):
             "parents": self.parents,
             "vertexAmount": self.vertexAmount,
             "bindVertex": self.bindVertex,
+            "isSolid": self.isSolid,
+            "isK33": self.isK33,
             "Adjacency": self.getAllVertexAdjacency(),
         }

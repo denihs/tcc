@@ -12,7 +12,7 @@ QUEUES_AMOUNT = 30
 
 K4 = {
     "numberOfVertex": 4,
-    "bindVertex": 0,
+    "isSolid": True,
     "graph": {
         "0": [1, 2, 3],
         "1": [2, 3],
@@ -23,6 +23,8 @@ K4 = {
 K33 = {
     "numberOfVertex": 6,
     "bindVertex": 0,
+    "isSolid": True,
+    "isK33": True,
     "graph": {
         "0": [3, 4, 5],
         "1": [3, 4, 5],
@@ -32,7 +34,7 @@ K33 = {
 
 S8 = {
     "numberOfVertex": 8,
-    "bindVertex": 0,
+    "isSolid": True,
     "graph": {
         "0": [1, 2, 3, 4],
         "1": [0, 2, 3, 4],
@@ -47,7 +49,7 @@ S8 = {
 
 WANG = {
     "numberOfVertex": 12,
-    "bindVertex": 0,
+    "isSolid": True,
     "graph": {
         "0": [1, 4, 7],
         "1": [0, 2, 9],
@@ -64,16 +66,31 @@ WANG = {
     }
 }
 
+
 def getIsIsomorphic(g, h):
     return isomorphic(g, h)
 
 
 def getGraph(data):
-    g = GraphExt(data["numberOfVertex"])
+    isSolid = None
+    isK33 = None
+    bindVertex = None
+    if "isSolid" in data.keys():
+        isSolid = data["isSolid"]
+    if "isK33" in data.keys():
+        isK33 = data["isK33"]
+    if "bindVertex" in data.keys():
+        bindVertex = data["bindVertex"]
+
+    g = GraphExt(vertexAmount=data["numberOfVertex"], isSolid=isSolid, isK33=isK33, bindVertex=bindVertex)
     graph = data["graph"]
     for v in graph:
         g.connect_vertex(int(v), graph[v])
     return g
+
+
+# Esse cara eh especial, vamos trata-lo diferente no codigo
+K33_GRAPH = getGraph(K33)
 
 
 def translateMap(graphMap, adjacency):
@@ -102,6 +119,15 @@ def findBindVertex(g1, g2):
             if v1 == v2:
                 return k1, k2
     return None, None
+
+
+def getGraphNewBindVertex(graph, graphToBind, mapValues):
+    if graph.isK33:
+        if graph.bindVertex < 3:
+            newBindVertex = filterList([3, 4, 5], graph.bindVertex)[0]
+        else:
+            newBindVertex = filterList([0, 1, 2], graph.bindVertex)[0]
+        graphToBind.setBindVertex(list(mapValues.keys())[list(mapValues.values()).index(newBindVertex)])
 
 
 def bindGraph(g1, g2):
@@ -148,6 +174,8 @@ def bindGraph(g1, g2):
                     filterList(graphAdjacency2[map2[i]], graph2.bindVertex)
                 )
             )
+    getGraphNewBindVertex(graph1, g, map1)
+    getGraphNewBindVertex(graph2, g, map2)
 
     # conectando as partes dos grafos
     # descobre quem está com grau faltando no primeiro grafo
@@ -430,7 +458,7 @@ def isPMCompact(originGraph):
 
 
 def createWheel(size):
-    g = {"numberOfVertex": size, "bindVertex": 0, "graph": {}}
+    g = {"numberOfVertex": size, "bindVertex": 0, "isSolid": True, "graph": {}}
     for i in range(1, size):
         nextV = i + 1
         if nextV == size:
@@ -473,7 +501,7 @@ def initiateQueues():
         if vertexNumber == 4:
             currentQueue.append(getGraph(K4))
         if vertexNumber == 6:
-            currentQueue.append(getGraph(K33))
+            currentQueue.append(K33_GRAPH)
         if vertexNumber == 8:
             currentQueue.append(getGraph(S8))
         if vertexNumber == 12:
@@ -490,10 +518,14 @@ def initiateQueues():
     return queues
 
 
-def selfPermute(queue, queues, alreadyAcceptedGraphs):
+def selfPermute(queue, queues, alreadyAcceptedGraphs, alreadyBondedGraph=None):
     graphs = deepcopy(queue)
     g, h = graphs
-    bondedGraphs = bindByOrbits(g, h)
+    bondedGraphs = []
+    if alreadyBondedGraph is None:
+        bondedGraphs = bindByOrbits(g, h)
+    else:
+        bondedGraphs.append(alreadyBondedGraph)
     for bondedGraph in bondedGraphs:
         acceptedGraphs = twistEdges(bondedGraph, alreadyAcceptedGraphs)
         vertexAmount = bondedGraph.vertexAmount
@@ -505,10 +537,69 @@ def selfPermute(queue, queues, alreadyAcceptedGraphs):
             registerGraph(acc, isThreeRegular(acc))
 
 
-def permuteQueues(first, lastQueue, queues, alreadyAcceptedGraphs):
-    for g in first:
-        for h in lastQueue:
+def getVertexDegree3ToBind(g):
+    verticesDegrees = g.getVertexDegree()
+    vertexToBind = None
+    for x in list(verticesDegrees.keys()):
+        if verticesDegrees[x] == 3:
+            vertexToBind = x
+            break
+    return vertexToBind
+
+
+def calculateK33(g, queues, alreadyAcceptedGraphs, calculating):
+    if calculating < 10:
+        return
+
+    # Essa conta sai da ideia que colar um grafo em cada partiçao do K33
+    # a conta saida da expressao N = 6 + g.vertexAmount + h.vertexAmount - 4
+    X = g.vertexAmount
+    Y = calculating - 6 + 4 - X
+
+    if Y < 4:
+        return
+    vertexToBind = getVertexDegree3ToBind(g)
+    if vertexToBind is None:
+        return
+
+    g.setBindVertex(vertexToBind)
+    firstGraph = bindGraph(deepcopy(K33_GRAPH), deepcopy(g))
+
+    for graph in queues[Y]:
+        if graph.isSolid:
+            deepGraph = deepcopy(graph)
+
+            vertexToBind = getVertexDegree3ToBind(deepGraph)
+            deepGraph.setBindVertex(vertexToBind)
+
+            bondedGraph = bindGraph(deepcopy(firstGraph), deepcopy(deepGraph))
+            bondedGraph.setId("{} - {} * {}".format(calculating, firstGraph.getId(), deepGraph.getId()))
+            bondedGraph.setParents(firstGraph.getId(), deepGraph.getId())
+            selfPermute([deepcopy(bondedGraph), deepcopy(deepGraph)], queues, alreadyAcceptedGraphs, deepcopy(bondedGraph))
+        
+
+def computeLists(solids, notSolids, queues, alreadyAcceptedGraphs, calculating):
+    firstSolid = solids[0]
+
+    calculateK33(deepcopy(firstSolid), queues, alreadyAcceptedGraphs, calculating)
+
+    for g in solids:
+        for h in notSolids:
+            if g.isK33 or h.isK33:
+                continue
             selfPermute([deepcopy(g), deepcopy(h)], queues, alreadyAcceptedGraphs)
+
+
+def permuteQueues(first, lastQueue, queues, alreadyAcceptedGraphs, calculating):
+    # k33 eh um caso a parte
+    firstSolids = [x for x in first if x.isSolid and not x.isK33]
+    computeLists(firstSolids, lastQueue, queues, alreadyAcceptedGraphs, calculating)
+
+    if first[0].vertexAmount == lastQueue[0].vertexAmount:
+        return
+    # k33 eh um caso a parte
+    lastSolids = [x for x in lastQueue if x.isSolid and not x.isK33]
+    computeLists(lastSolids, first, queues, alreadyAcceptedGraphs, calculating)
 
 
 def main():
@@ -527,13 +618,13 @@ def main():
             if len(rangeValues) == 1:
                 solo = rangeValues[0]
                 print("solo - {} -> {}".format(solo, len(queues[solo])))
-                permuteQueues(queues[solo], queues[solo], queues, alreadyAcceptedGraphs)
+                permuteQueues(queues[solo], queues[solo], queues, alreadyAcceptedGraphs, calculating)
                 rangeValues.pop(0)
                 continue
             first = rangeValues.pop(0)
             last = rangeValues.pop(-1)
             print("first - {} -> {} | last - {} -> {}".format(first, len(queues[first]), last, len(queues[last])))
-            permuteQueues(queues[first], queues[last], queues, alreadyAcceptedGraphs)
+            permuteQueues(queues[first], queues[last], queues, alreadyAcceptedGraphs, calculating)
 
 
 def drawProfessorsGraphs(fgraphs):

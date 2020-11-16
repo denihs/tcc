@@ -1,8 +1,7 @@
 # tcc
 
-O código está na branch pynauty.
 
-Para acessar ele diretamente [cique aqui](https://github.com/denihs/tcc/tree/pynauty/pynauty-0.6.0/tccSource/main.py)
+Para acessar o código diretamente [cique aqui](https://github.com/denihs/tcc/tree/pynauty/pynauty-0.6.0/tccSource/main.py)
 
 Para acessar as listas [clique aqui](https://github.com/denihs/tcc/tree/pynauty/pynauty-0.6.0/tccSource/lists)
 

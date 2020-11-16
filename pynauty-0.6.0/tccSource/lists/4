@@ -1,0 +1,30 @@
+{
+    "id": "4-0",
+    "parents": null,
+    "vertexAmount": 4,
+    "bindVertex": null,
+    "isSolid": true,
+    "isK33": null,
+    "Adjacency": {
+        "0": [
+            1,
+            2,
+            3
+        ],
+        "1": [
+            2,
+            3,
+            0
+        ],
+        "2": [
+            3,
+            0,
+            1
+        ],
+        "3": [
+            0,
+            1,
+            2
+        ]
+    }
+}
